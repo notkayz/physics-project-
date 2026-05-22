@@ -23,8 +23,7 @@ lever = cylinder(pos = pivot_point, axis = ball_pos - pivot_point,
                 )
 
 ball = sphere(pos = ball_pos, radius = 0.05, 
-                color = color.red,
-                make_trail = True)
+                color = color.red)
 
 while (True):
     rate(1000)
@@ -36,5 +35,5 @@ while (True):
     print(theta)
 
     ball_pos = vector(length * sin(theta), -length*cos(theta), 0)
-
+    ball.pos = ball_pos
     lever.axis = ball_pos - pivot_point

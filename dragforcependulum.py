@@ -13,6 +13,7 @@ dt = 0.01
 
 theta = theta0 
 omega = 0
+velocity = omega * length
 
 pivot_point = vector(0,0,0)
 
@@ -22,13 +23,19 @@ lever = cylinder(pos = pivot_point, axis = ball_pos - pivot_point,
                  color = color.black, radius = 0.1
                 )
 
-ball = sphere(pos = ball_pos, radius = 0.05, 
+ball = sphere(pos = ball_pos, radius = 0.5, 
                 color = color.red)
+
+
+# fd = 1/2 pv^2 CA  p = density of air, v = velocity, C = drag coeff of obj, A = area perpendicular to motion
+
+drag_constant = 0.5 * 1.225 * pi((ball.radius)**2) * 0.47
+fd = drag_constant * velocity**2
 
 while (True):
     rate(1000)
 
-    delt_omega = -g / length * sin(theta)
+    delt_omega = (-g / length * sin(theta)) - fd
 
     omega += delt_omega * dt
     theta += omega * dt 

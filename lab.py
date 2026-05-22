@@ -1,1 +1,40 @@
 from vpython import *
+
+# canvas setup and camera 
+scene = canvas(width = 1000, height = 1000, 
+               center = vector(0, -1, 0), 
+               background = color.white)
+
+# pendulum init conditions 
+length = 4 
+theta0 = radians(30) # radians
+g = 9.81
+dt = 0.01 
+
+theta = theta0 
+omega = 0
+
+pivot_point = vector(0,0,0)
+
+ball_pos = vector(length * sin(theta), -length*cos(theta), 0)
+
+lever = cylinder(pos = pivot_point, axis = ball_pos - pivot_point, 
+                 color = color.black, radius = 0.1
+                )
+
+ball = sphere(pos = ball_pos, radius = 0.05, 
+                color = color.red,
+                make_trail = True)
+
+while (True):
+    rate(1000)
+
+    delt_omega = -g / length * sin(theta)
+
+    omega += delt_omega * dt
+    theta += omega * dt 
+    print(theta)
+
+    ball_pos = vector(length * sin(theta), -length*cos(theta), 0)
+
+    lever.axis = ball_pos - pivot_point

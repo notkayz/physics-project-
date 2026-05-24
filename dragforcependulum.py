@@ -1,4 +1,4 @@
-from vpython import *
+from vpython import * 
 
 # canvas setup and camera 
 scene = canvas(width = 1000, height = 1000, 
@@ -6,41 +6,57 @@ scene = canvas(width = 1000, height = 1000,
                background = color.white)
 
 # pendulum init conditions 
-length = 4 
+mass = 0.1
+length = 1
 theta0 = radians(30) # radians
 g = 9.81
-dt = 0.01 
+t = 0
+dt = 0.01
 
 theta = theta0 
 omega = 0
-velocity = omega * length
+alpha = 0 
 
-pivot_point = vector(0,0,0)
+# object stuff
 
-ball_pos = vector(length * sin(theta), -length*cos(theta), 0)
+pivot = vector(0,0,0)
 
-lever = cylinder(pos = pivot_point, axis = ball_pos - pivot_point, 
-                 color = color.black, radius = 0.1
-                )
+ball_pos = vector(length * sin(theta), -length * cos(theta), 0)
 
-ball = sphere(pos = ball_pos, radius = 0.5, 
-                color = color.red)
+lever = cylinder(pos = pivot, axis = ball_pos - pivot, color = color.black, radius = 0.01)
+                
+ball = sphere(pos = ball_pos, radius = 0.1, color = color.red, make_trail = True)
+
+# drag info
+
+# Fd = 1/2 pv^2 CA ; p = air density, v = velocity, C = drag constant, A = area ; 1/2 bv^2
+
+rho = 1.225
+C = 0.47 
+A = pi * (ball.radius ** 2)
+
+drag_constant = 0.5 * rho * C * A
 
 
-# fd = 1/2 pv^2 CA  p = density of air, v = velocity, C = drag coeff of obj, A = area perpendicular to motion
-
-drag_constant = 0.5 * 1.225 * pi((ball.radius)**2) * 0.47
-fd = drag_constant * velocity**2
-
-while (True):
-    rate(1000)
-
-    delt_omega = (-g / length * sin(theta)) - fd
-
-    omega += delt_omega * dt
-    theta += omega * dt 
-    print(theta)
-
+while (True) :
+    rate(100)
+    
+    velocity = omega * length
+    
+    # torque forces
+    fdrag = -drag_constant * velocity * abs(velocity)
+    fg = -mass * g * sin(theta)  
+    fdrive = 0
+    
+    torqTotal = (fdrag + fg) * length
+    alpha = torqTotal / (mass * length**2)
+    
+    omega += alpha * dt
+    theta += omega * dt
+    
     ball_pos = vector(length * sin(theta), -length*cos(theta), 0)
     ball.pos = ball_pos
-    lever.axis = ball_pos - pivot_point
+    lever.axis = ball_pos - pivot
+    
+    t += dt
+

@@ -45,8 +45,7 @@ while (True) :
     
     # torque forces
     fdrag = -drag_constant * velocity * abs(velocity)
-    fg = -mass * g * sin(theta)  
-    fdrive = 0
+    fg = -mass * g * sin(theta) 
     
     torqTotal = (fdrag + fg) * length
     alpha = torqTotal / (mass * length**2)

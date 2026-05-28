@@ -1,6 +1,6 @@
 Web VPython 3.2
 # canvas setup and camera 
-scene = canvas(width = 1000, height = 1000, 
+scene = canvas(width = 500, height = 500, 
                center = vector(0, -1, 0), 
                background = color.white)
 
@@ -17,26 +17,27 @@ omega = 0
 alpha = 0
 
 # driving force
-amp = .981
-freq = pi / 3
+amp = .981 * 3
+freq = sqrt(g) - .1
 
 # graphs
+t_frame = 10
 
-g1 = graph(width=350, height=250, xtitle=("Time"), ytitle=("Angular Velocity"), align='left')
+g1 = graph(width=350, height=250, xtitle=("Time (s)"), ytitle=("Angular Velocity (rad/s)"), align='left')
 omegaDots=gdots(color=color.green, graph=g1)
 
-g2 = graph(width=350, height=250, xtitle=("Time"), ytitle=("Angular Acceleration"), align='left')
+g2 = graph(width=350, height=250, xtitle=("Time (s)"), ytitle=("Angular Acceleration (rad/s^2)"), align='left')
 alphaDots=gdots(color=color.green, graph = g2)
 
-g3 = graph(width=350, height=250, xtitle=("Time"), ytitle=("Driving Force"), align='left')
+g3 = graph(width=350, height=250, xtitle=("Time (s)"), ytitle=("Driving Force (N)"), align='left')
 driveDots=gdots(color=color.green, graph = g3)
 
-g4 = graph(width=350, height=250, xtitle=("Time"), ytitle=("Kinetic and Potential"), align='left')
+g4 = graph(width=350, height=250, xtitle=("Time (s)"), ytitle=("KE (red) and U (green) (J)"), align='left')
 keDots=gdots(color=color.red, graph = g4)
 uDots=gdots(color=color.green, graph=g4)
 
-g5 = graph(width=350, height=250, xtitle=("Angular Position"), ytitle=("Angular Velocity"), align='left', xmin=-pi, xmax=pi)
-thetaDots=gdots(color=color.red, graph = g5)
+g6 = graph(width=350, height=250, xtitle=("Angular Position (rad)"), ytitle=("Angular Velocity (rad/s)"), align='left', xmin=-pi, xmax=pi)
+thetaDots=gdots(color=color.red, graph = g6)
 
 # object stuff
 
@@ -58,7 +59,6 @@ A = pi * (ball.radius ** 2)
 
 drag_constant = 0.5 * rho * C * A
 
-
 while (True) :
     rate(100)
     
@@ -68,19 +68,32 @@ while (True) :
     fdrag = -drag_constant * velocity * abs(velocity)
     fg = -mass * g * sin(theta)  
     fdrive = amp * cos(freq * t)
-    
+#    fdrive = amp * sin(3 * cos(freq * t) + sin(freq * t))
+#    fdrive = .5 * (exp(sin(t)) - 1)
+#    fdrive = amp * sign(sin(t))
+#    fdrive = 5 * cos(t)+ 2 * sin(3 * t)
     torqTotal = (fdrag + fg + fdrive) * length
     alpha = torqTotal / (mass * length**2)
     
     KE = 1/2 * mass * (velocity**2)
     U = mass * g * (length * (1 - cos( abs(theta) ) ) )
-    
-    omegaDots.plot(t,omega)
+
+    omegaDots.plot(t, omega)
     alphaDots.plot(t, alpha)
     driveDots.plot(t, fdrive)
     keDots.plot(t, KE)
     uDots.plot(t, U)
     thetaDots.plot(theta, omega)
+    
+    if (t > t_frame):
+        g1.xmin = t - t_frame
+        g1.xmax = t
+        g2.xmin = t - t_frame
+        g2.xmax = t
+        g3.xmin = t - t_frame
+        g3.xmax = t
+        g4.xmin = t - t_frame
+        g4.xmax = t
     
     omega += alpha * dt
     theta += omega * dt
@@ -96,3 +109,4 @@ while (True) :
     lever.axis = ball_pos - pivot
     
     t += dt
+

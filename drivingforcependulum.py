@@ -12,7 +12,7 @@ theta0 = radians(30) # radians
 g = 9.81
 t = 0
 dt = 0.01
-play = True
+play = False
 
 theta = theta0 
 omega = 0
@@ -31,6 +31,23 @@ def playPauseButton (evt) :
 
 playPause = button (bind= playPauseButton, text = "Play/Pause")
 
+def resetButton (evt) :
+    global t, theta, omega, alpha, play 
+    if evt.text == "Reset":
+        t = 0
+        theta = theta0 
+        omega = 0
+        alpha = 0
+        play = False
+        omegaDots.delete()
+        alphaDots.delete()
+        driveDots.delete()
+        keDots.delete()
+        uDots.delete()
+        thetaDots.delete()
+
+reset = button(bind = resetButton, text = "Reset")
+
 # graphs
 t_frame = 10
 
@@ -47,8 +64,8 @@ g4 = graph(width=350, height=250, xtitle=("Time (s)"), ytitle=("KE (red) and U (
 keDots=gdots(color=color.red, graph = g4)
 uDots=gdots(color=color.green, graph=g4)
 
-g6 = graph(width=350, height=250, xtitle=("Angular Position (rad)"), ytitle=("Angular Velocity (rad/s)"), align='left', xmin=-pi, xmax=pi)
-thetaDots=gdots(color=color.red, graph = g6)
+g5 = graph(width=350, height=250, xtitle=("Angular Position (rad)"), ytitle=("Angular Velocity (rad/s)"), align='left', xmin=-pi, xmax=pi)
+thetaDots=gdots(color=color.red, graph = g5)
 
 # object stuff
 
@@ -71,6 +88,7 @@ A = pi * (ball.radius ** 2)
 drag_constant = 0.5 * rho * C * A
 
 # sliders 
+scene.append_to_caption("\n \n <b> Parameters : </b> \n \n Mass : ")
 
 def changeMass (evt) : 
     global mass, massText
@@ -80,6 +98,8 @@ def changeMass (evt) :
 
 massSlider = slider (bind = changeMass, max = 1, min = 0.1, step = 0.1, value = mass, id = 'm')
 massText = wtext(text='{:1.2f} kgs'.format(massSlider.value))
+
+scene.append_to_caption("\n \n Length :")
 
 def changeLength (evt) : 
     global length, lengthText
@@ -91,6 +111,8 @@ def changeLength (evt) :
 lengthSlider = slider (bind = changeLength, max = 10, min = 1, step = 1, value = length, id = 'l')
 lengthText = wtext(text='{:1.2f} m'.format(lengthSlider.value))
 
+scene.append_to_caption("\n \n Radius : ")
+
 def changeBall (evt) : 
     global length, radiusText
     if evt.id == 'r':
@@ -100,6 +122,8 @@ def changeBall (evt) :
 
 radiusSlider = slider (bind = changeBall, max = 1, min = 0.1, step = 0.1, value = ball.radius, id = 'r')
 radiusText = wtext(text='{:1.2f} m'.format(radiusSlider.value))
+
+scene.append_to_caption("\n \n")
 
 while (True) :
     if (play) :

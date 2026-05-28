@@ -2,6 +2,8 @@ from vpython import *
 # canvas setup and camera 
 scene = canvas(width = 500, height = 500, 
                background = color.white)
+scene.userzoom = False
+scene.userpan = False
 
 # pendulum init conditions 
 mass = 0.1
@@ -11,7 +13,6 @@ g = 9.81
 t = 0
 dt = 0.01
 play = True
-ball_radius = 0.1
 
 theta = theta0 
 omega = 0
@@ -21,7 +22,7 @@ alpha = 0
 amp = .981 * 3
 freq = sqrt(g) - .1
 
-# sliders and buttons 
+# buttons 
 
 def playPauseButton (evt) :
     global play
@@ -29,34 +30,6 @@ def playPauseButton (evt) :
         play = not play
 
 playPause = button (bind= playPauseButton, text = "Play/Pause")
-
-def changeMass (evt) : 
-    global mass, massText
-    if evt.id == 'm':
-        mass = evt.value
-        massText.text = '{:1.2f} kgs'.format(massSlider.value)
-
-massSlider = slider (bind = changeMass, max = 1, min = 0.1, step = 0.1, value = mass, id = 'm')
-massText = wtext(text='{:1.2f} kgs'.format(massSlider.value))
-
-def changeLength (evt) : 
-    global length, lengthText
-    if evt.id == 'l':
-        length = evt.value
-        lengthText.text = '{:1.2f} m'.format(lengthSlider.value)
-        scene.range = length * 1.5
-
-lengthSlider = slider (bind = changeLength, max = 10, min = 1, step = 1, value = length, id = 'l')
-lengthText = wtext(text='{:1.2f} m'.format(lengthSlider.value))
-
-def changeBall (evt) : 
-    global ball_radius, radiusText
-    if evt.id == 'r':
-        ball_radius = evt.value
-        radiusText.text = '{:1.2f} m'.format(radiusSlider.value)
-
-radiusSlider = slider (bind = changeBall, max = 1, min = 0.1, step = 0.1, value = ball_radius, id = 'r')
-radiusText = wtext(text='{:1.2f} m'.format(radiusSlider.value))
 
 # graphs
 t_frame = 10
@@ -85,7 +58,7 @@ ball_pos = vector(length * sin(theta), -length * cos(theta), 0)
 
 lever = cylinder(pos = pivot, axis = ball_pos - pivot, color = color.black, radius = 0.01)
                 
-ball = sphere(pos = ball_pos, radius = ball_radius, color = color.red )#,make_trail = True)
+ball = sphere(pos = ball_pos, radius = 0.1, color = color.red )#,make_trail = True)
 
 # drag info
 
@@ -96,6 +69,37 @@ C = 0.47
 A = pi * (ball.radius ** 2)
 
 drag_constant = 0.5 * rho * C * A
+
+# sliders 
+
+def changeMass (evt) : 
+    global mass, massText
+    if evt.id == 'm':
+        mass = evt.value
+        massText.text = '{:1.2f} kgs'.format(massSlider.value)
+
+massSlider = slider (bind = changeMass, max = 1, min = 0.1, step = 0.1, value = mass, id = 'm')
+massText = wtext(text='{:1.2f} kgs'.format(massSlider.value))
+
+def changeLength (evt) : 
+    global length, lengthText
+    if evt.id == 'l':
+        length = evt.value
+        lengthText.text = '{:1.2f} m'.format(lengthSlider.value)
+        scene.range = (length + ball.radius) * 1.5
+
+lengthSlider = slider (bind = changeLength, max = 10, min = 1, step = 1, value = length, id = 'l')
+lengthText = wtext(text='{:1.2f} m'.format(lengthSlider.value))
+
+def changeBall (evt) : 
+    global length, radiusText
+    if evt.id == 'r':
+        ball.radius = evt.value
+        radiusText.text = '{:1.2f} m'.format(radiusSlider.value)
+        scene.range = (length + ball.radius) * 1.5
+
+radiusSlider = slider (bind = changeBall, max = 1, min = 0.1, step = 0.1, value = ball.radius, id = 'r')
+radiusText = wtext(text='{:1.2f} m'.format(radiusSlider.value))
 
 while (True) :
     if (play) :

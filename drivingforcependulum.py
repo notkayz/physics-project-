@@ -1,9 +1,11 @@
 from vpython import *
 # canvas setup and camera 
-scene = canvas(width = 500, height = 500, 
+s1 = canvas(align = "left", width = 500, height = 500, 
                background = color.white)
-scene.userzoom = False
-scene.userpan = False
+s1.userzoom = False
+s1.userpan = False
+
+# s2 = canvas(align = "left", width = 500, height = 500, background = color.red)
 
 # pendulum init conditions 
 mass = 0.1
@@ -73,9 +75,9 @@ pivot = vector(0,0,0)
 
 ball_pos = vector(length * sin(theta), -length * cos(theta), 0)
 
-lever = cylinder(pos = pivot, axis = ball_pos - pivot, color = color.black, radius = 0.01)
+lever = cylinder(canvas = s1, pos = pivot, axis = ball_pos - pivot, color = color.black, radius = 0.01)
                 
-ball = sphere(pos = ball_pos, radius = 0.1, color = color.red )#,make_trail = True)
+ball = sphere(canvas = s1, pos = ball_pos, radius = 0.1, color = color.red )#,make_trail = True)
 
 # drag info
 
@@ -88,7 +90,7 @@ A = pi * (ball.radius ** 2)
 drag_constant = 0.5 * rho * C * A
 
 # sliders 
-scene.append_to_caption("\n \n <b> Parameters : </b> \n \n Mass : ")
+s1.append_to_caption("\n \n <b> Parameters : </b> \n \n Mass : ")
 
 def changeMass (evt) : 
     global mass, massText
@@ -99,19 +101,19 @@ def changeMass (evt) :
 massSlider = slider (bind = changeMass, max = 1, min = 0.1, step = 0.1, value = mass, id = 'm')
 massText = wtext(text='{:1.2f} kgs'.format(massSlider.value))
 
-scene.append_to_caption("\n \n Length :")
+s1.append_to_caption("\n \n Length :")
 
 def changeLength (evt) : 
     global length, lengthText
     if evt.id == 'l':
         length = evt.value
         lengthText.text = '{:1.2f} m'.format(lengthSlider.value)
-        scene.range = (length + ball.radius) * 1.5
+        s1.range = (length + ball.radius) * 1.5
 
 lengthSlider = slider (bind = changeLength, max = 10, min = 1, step = 1, value = length, id = 'l')
 lengthText = wtext(text='{:1.2f} m'.format(lengthSlider.value))
 
-scene.append_to_caption("\n \n Radius : ")
+s1.append_to_caption("\n \n Radius : ")
 
 def changeBall (evt) : 
     global length, radiusText
@@ -123,7 +125,7 @@ def changeBall (evt) :
 radiusSlider = slider (bind = changeBall, max = 1, min = 0.1, step = 0.1, value = ball.radius, id = 'r')
 radiusText = wtext(text='{:1.2f} m'.format(radiusSlider.value))
 
-scene.append_to_caption("\n \n")
+s1.append_to_caption("\n \n")
 
 while (True) :
     if (play) :

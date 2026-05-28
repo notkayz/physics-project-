@@ -1,7 +1,6 @@
-Web VPython 3.2
+from vpython import *
 # canvas setup and camera 
 scene = canvas(width = 500, height = 500, 
-               center = vector(0, -1, 0), 
                background = color.white)
 
 # pendulum init conditions 
@@ -11,6 +10,8 @@ theta0 = radians(30) # radians
 g = 9.81
 t = 0
 dt = 0.01
+play = True
+ball_radius = 0.1
 
 theta = theta0 
 omega = 0
@@ -19,6 +20,43 @@ alpha = 0
 # driving force
 amp = .981 * 3
 freq = sqrt(g) - .1
+
+# sliders and buttons 
+
+def playPauseButton (evt) :
+    global play
+    if evt.text == "Play/Pause":
+        play = not play
+
+playPause = button (bind= playPauseButton, text = "Play/Pause")
+
+def changeMass (evt) : 
+    global mass, massText
+    if evt.id == 'm':
+        mass = evt.value
+        massText.text = '{:1.2f} kgs'.format(massSlider.value)
+
+massSlider = slider (bind = changeMass, max = 1, min = 0.1, step = 0.1, value = mass, id = 'm')
+massText = wtext(text='{:1.2f} kgs'.format(massSlider.value))
+
+def changeLength (evt) : 
+    global length, lengthText
+    if evt.id == 'l':
+        length = evt.value
+        lengthText.text = '{:1.2f} m'.format(lengthSlider.value)
+        scene.range = length * 1.5
+
+lengthSlider = slider (bind = changeLength, max = 10, min = 1, step = 1, value = length, id = 'l')
+lengthText = wtext(text='{:1.2f} m'.format(lengthSlider.value))
+
+def changeBall (evt) : 
+    global ball_radius, radiusText
+    if evt.id == 'r':
+        ball_radius = evt.value
+        radiusText.text = '{:1.2f} m'.format(radiusSlider.value)
+
+radiusSlider = slider (bind = changeBall, max = 1, min = 0.1, step = 0.1, value = ball_radius, id = 'r')
+radiusText = wtext(text='{:1.2f} m'.format(radiusSlider.value))
 
 # graphs
 t_frame = 10
@@ -47,7 +85,7 @@ ball_pos = vector(length * sin(theta), -length * cos(theta), 0)
 
 lever = cylinder(pos = pivot, axis = ball_pos - pivot, color = color.black, radius = 0.01)
                 
-ball = sphere(pos = ball_pos, radius = 0.1, color = color.red )#,make_trail = True)
+ball = sphere(pos = ball_pos, radius = ball_radius, color = color.red )#,make_trail = True)
 
 # drag info
 
@@ -60,53 +98,54 @@ A = pi * (ball.radius ** 2)
 drag_constant = 0.5 * rho * C * A
 
 while (True) :
-    rate(100)
-    
-    velocity = omega * length
-    
-    # torque forces
-    fdrag = -drag_constant * velocity * abs(velocity)
-    fg = -mass * g * sin(theta)  
-    fdrive = amp * cos(freq * t)
-#    fdrive = amp * sin(3 * cos(freq * t) + sin(freq * t))
-#    fdrive = .5 * (exp(sin(t)) - 1)
-#    fdrive = amp * sign(sin(t))
-#    fdrive = 5 * cos(t)+ 2 * sin(3 * t)
-    torqTotal = (fdrag + fg + fdrive) * length
-    alpha = torqTotal / (mass * length**2)
-    
-    KE = 1/2 * mass * (velocity**2)
-    U = mass * g * (length * (1 - cos( abs(theta) ) ) )
+    if (play) :
+        rate(100)
+        
+        velocity = omega * length
+        
+        # torque forces
+        fdrag = -drag_constant * velocity * abs(velocity)
+        fg = -mass * g * sin(theta)  
+        fdrive = amp * cos(freq * t)
+    #    fdrive = amp * sin(3 * cos(freq * t) + sin(freq * t))
+    #    fdrive = .5 * (exp(sin(t)) - 1)
+    #    fdrive = amp * sign(sin(t))
+    #    fdrive = 5 * cos(t)+ 2 * sin(3 * t)
+        torqTotal = (fdrag + fg + fdrive) * length
+        alpha = torqTotal / (mass * length**2)
+        
+        KE = 1/2 * mass * (velocity**2)
+        U = mass * g * (length * (1 - cos( abs(theta) ) ) )
 
-    omegaDots.plot(t, omega)
-    alphaDots.plot(t, alpha)
-    driveDots.plot(t, fdrive)
-    keDots.plot(t, KE)
-    uDots.plot(t, U)
-    thetaDots.plot(theta, omega)
-    
-    if (t > t_frame):
-        g1.xmin = t - t_frame
-        g1.xmax = t
-        g2.xmin = t - t_frame
-        g2.xmax = t
-        g3.xmin = t - t_frame
-        g3.xmax = t
-        g4.xmin = t - t_frame
-        g4.xmax = t
-    
-    omega += alpha * dt
-    theta += omega * dt
-    
-    theta %= 2 * pi
-    if (theta < 0):
-        theta += 2 * pi
-    if (theta > pi):
-        theta -= 2 * pi
-    
-    ball_pos = vector(length * sin(theta), -length*cos(theta), 0)
-    ball.pos = ball_pos
-    lever.axis = ball_pos - pivot
-    
-    t += dt
+        omegaDots.plot(t, omega)
+        alphaDots.plot(t, alpha)
+        driveDots.plot(t, fdrive)
+        keDots.plot(t, KE)
+        uDots.plot(t, U)
+        thetaDots.plot(theta, omega)
+        
+        if (t > t_frame):
+            g1.xmin = t - t_frame
+            g1.xmax = t
+            g2.xmin = t - t_frame
+            g2.xmax = t
+            g3.xmin = t - t_frame
+            g3.xmax = t
+            g4.xmin = t - t_frame
+            g4.xmax = t
+        
+        omega += alpha * dt
+        theta += omega * dt
+        
+        theta %= 2 * pi
+        if (theta < 0):
+            theta += 2 * pi
+        if (theta > pi):
+            theta -= 2 * pi
+        
+        ball_pos = vector(length * sin(theta), -length*cos(theta), 0)
+        ball.pos = ball_pos
+        lever.axis = ball_pos - pivot
+        
+        t += dt
 

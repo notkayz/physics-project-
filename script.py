@@ -71,13 +71,13 @@ thetaDots=gdots(color=color.red, graph = g5)
 
 # object stuff
 
-pivot = vector(0,0,0)
+# pivot = vector(0,0,0)
 
-ball_pos = vector(length * sin(theta), -length * cos(theta), 0)
+# ball_pos = vector(length * sin(theta), -length * cos(theta), 0)
 
-lever = cylinder(canvas = s1, pos = pivot, axis = ball_pos - pivot, color = color.black, radius = 0.01)
+# lever = cylinder(canvas = s1, pos = pivot, axis = ball_pos - pivot, color = color.black, radius = 0.01)
                 
-ball = sphere(canvas = s1, pos = ball_pos, radius = 0.1, color = color.red )#,make_trail = True)
+# ball = sphere(canvas = s1, pos = ball_pos, radius = 0.1, color = color.red )#,make_trail = True)
 
 # drag info
 
@@ -90,18 +90,12 @@ A = pi * (ball.radius ** 2)
 drag_constant = 0.5 * rho * C * A
 
 # sliders 
-s1.append_to_caption("\n \n <b> Parameters : </b> \n \n Mass : ")
 
 def changeMass (evt) : 
     global mass, massText
     if evt.id == 'm':
         mass = evt.value
         massText.text = '{:1.2f} kgs'.format(massSlider.value)
-
-massSlider = slider (bind = changeMass, max = 1, min = 0.1, step = 0.1, value = mass, id = 'm')
-massText = wtext(text='{:1.2f} kgs'.format(massSlider.value))
-
-s1.append_to_caption("\n \n Length :")
 
 def changeLength (evt) : 
     global length, lengthText
@@ -110,11 +104,6 @@ def changeLength (evt) :
         lengthText.text = '{:1.2f} m'.format(lengthSlider.value)
         s1.range = (length + ball.radius) * 1.5
 
-lengthSlider = slider (bind = changeLength, max = 10, min = 1, step = 1, value = length, id = 'l')
-lengthText = wtext(text='{:1.2f} m'.format(lengthSlider.value))
-
-s1.append_to_caption("\n \n Radius : ")
-
 def changeBall (evt) : 
     global length, radiusText
     if evt.id == 'r':
@@ -122,28 +111,86 @@ def changeBall (evt) :
         radiusText.text = '{:1.2f} m'.format(radiusSlider.value)
         scene.range = (length + ball.radius) * 1.5
 
+s1.append_to_caption("\n \n <b> Parameters : </b> \n \n Mass : ")
+
+massSlider = slider (bind = changeMass, max = 1, min = 0.1, step = 0.1, value = mass, id = 'm')
+massText = wtext(text='{:1.2f} kgs'.format(massSlider.value))
+
+s1.append_to_caption("\n \n Length :")
+
+lengthSlider = slider (bind = changeLength, max = 10, min = 1, step = 1, value = length, id = 'l')
+lengthText = wtext(text='{:1.2f} m'.format(lengthSlider.value))
+
+s1.append_to_caption("\n \n Radius : ")
+
 radiusSlider = slider (bind = changeBall, max = 1, min = 0.1, step = 0.1, value = ball.radius, id = 'r')
 radiusText = wtext(text='{:1.2f} m'.format(radiusSlider.value))
 
 s1.append_to_caption("\n \n")
 
+class SimplePendulum:
+    def __init__(self, canvas, theta, drive, properties):
+        self.canvas = canvas
+        self.theta = theta
+        self.omega = 0
+        self.alpha = 0
+        self.properties = properties
+        self.drive = drive
+
+        self.pivot = vector(0,0,0)
+        self.pos = vector(length * sin(theta), -length * cos(theta), 0)
+        self.string = cylinder(canvas = canvas, pos = self.pivot, axis = ball_pos - self.pivot, color = color.black, radius = 0.01)
+        self.bob = sphere(canvas = canvas, pos = self.pos, radius = 0.1, color = color.red)
+
+    def update(self, t, dt):
+        drag_component = - self.properties["drag constant"] * self.properties["length"] / self.properties["mass"] * self.omega * abs(self.omega)
+        g_component = - 9.81 / self.properties["length"] * sin(self.theta)
+        drive_component = self.drive(t) / self.properties["length"] / self.properties["mass"]
+
+        self.alpha = drag_component + g_component + drive_component
+
+        # this section will go in an approx method later
+        self.omega += self.alpha * dt
+        self.theta += self.omega * dt
+        self.theta = theta_shift(self.theta)
+
+    def render(self):
+        self.bob.pos = self.pos
+        self.string.axis = self.pos - self.pivot
+
+    def render_sliders(self):
+        pass
+
+    def render_graphs(self):
+        pass
+
+#converts theta to equivalent angle in [-pi, pi]
+def theta_shift(theta):
+    theta_shifted = theta % 2 * pi
+    if (theta_shifted < 0):
+        theta_shifted += 2 * pi
+    if (theta_shifted > pi):
+        theta_shifted -= 2 * pi
+    return theta_shifted
+
+
+
+
+
+
+
 while (True) :
     if (play) :
         rate(100)
         
-        velocity = omega * length
-        
-        # torque forces
-        fdrag = -drag_constant * velocity * abs(velocity)
-        fg = -mass * g * sin(theta)  
+
         fdrive = amp * cos(freq * t)
+        # fdrive = amp * cos(.4 * freq * t) * cos(.2 * freq * t)
     #    fdrive = amp * sin(3 * cos(freq * t) + sin(freq * t))
     #    fdrive = .5 * (exp(sin(t)) - 1)
     #    fdrive = amp * sign(sin(t))
     #    fdrive = 5 * cos(t)+ 2 * sin(3 * t)
-        torqTotal = (fdrag + fg + fdrive) * length
-        alpha = torqTotal / (mass * length**2)
-        
+       
         KE = 1/2 * mass * (velocity**2)
         U = mass * g * (length * (1 - cos( abs(theta) ) ) )
 
@@ -164,17 +211,7 @@ while (True) :
             g4.xmin = t - t_frame
             g4.xmax = t
         
-        omega += alpha * dt
-        theta += omega * dt
-        
-        theta %= 2 * pi
-        if (theta < 0):
-            theta += 2 * pi
-        if (theta > pi):
-            theta -= 2 * pi
-        
         ball_pos = vector(length * sin(theta), -length*cos(theta), 0)
-        ball.pos = ball_pos
-        lever.axis = ball_pos - pivot
         
         t += dt
+

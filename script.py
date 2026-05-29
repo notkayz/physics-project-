@@ -7,166 +7,108 @@ s1.userpan = False
 
 # s2 = canvas(align = "left", width = 500, height = 500, background = color.red)
 
-# pendulum init conditions 
-mass = 0.1
-length = 1
-theta0 = radians(30) # radians
-g = 9.81
 t = 0
 dt = 0.01
 play = False
 
-theta = theta0 
-omega = 0
-alpha = 0
-
 # driving force
-amp = .981 * 3
-freq = sqrt(g) - .1
-
-# buttons 
-
-def playPauseButton (evt) :
-    global play
-    if evt.text == "Play/Pause":
-        play = not play
-
-playPause = button (bind= playPauseButton, text = "Play/Pause")
-
-def resetButton (evt) :
-    global t, theta, omega, alpha, play 
-    if evt.text == "Reset":
-        t = 0
-        theta = theta0 
-        omega = 0
-        alpha = 0
-        play = False
-        omegaDots.delete()
-        alphaDots.delete()
-        driveDots.delete()
-        keDots.delete()
-        uDots.delete()
-        thetaDots.delete()
-
-reset = button(bind = resetButton, text = "Reset")
-
-# graphs
-t_frame = 10
-
-g1 = graph(width=350, height=250, xtitle=("Time (s)"), ytitle=("Angular Velocity (rad/s)"), align='left')
-omegaDots=gdots(color=color.green, graph=g1)
-
-g2 = graph(width=350, height=250, xtitle=("Time (s)"), ytitle=("Angular Acceleration (rad/s^2)"), align='left')
-alphaDots=gdots(color=color.green, graph = g2)
-
-g3 = graph(width=350, height=250, xtitle=("Time (s)"), ytitle=("Driving Force (N)"), align='left')
-driveDots=gdots(color=color.green, graph = g3)
-
-g4 = graph(width=350, height=250, xtitle=("Time (s)"), ytitle=("KE (red) and U (green) (J)"), align='left')
-keDots=gdots(color=color.red, graph = g4)
-uDots=gdots(color=color.green, graph=g4)
-
-g5 = graph(width=350, height=250, xtitle=("Angular Position (rad)"), ytitle=("Angular Velocity (rad/s)"), align='left', xmin=-pi, xmax=pi)
-thetaDots=gdots(color=color.red, graph = g5)
-
-# object stuff
-
-# pivot = vector(0,0,0)
-
-# ball_pos = vector(length * sin(theta), -length * cos(theta), 0)
-
-# lever = cylinder(canvas = s1, pos = pivot, axis = ball_pos - pivot, color = color.black, radius = 0.01)
-                
-# ball = sphere(canvas = s1, pos = ball_pos, radius = 0.1, color = color.red )#,make_trail = True)
-
-# drag info
-
-# Fd = 1/2 pv^2 CA ; p = air density, v = velocity, C = drag constant, A = area ; 1/2 bv^2
-
-rho = 1.225
-C = 0.47
-A = pi * (ball.radius ** 2)
-
-drag_constant = 0.5 * rho * C * A
-
-# sliders 
-
-def changeMass (evt) : 
-    global mass, massText
-    if evt.id == 'm':
-        mass = evt.value
-        massText.text = '{:1.2f} kgs'.format(massSlider.value)
-
-def changeLength (evt) : 
-    global length, lengthText
-    if evt.id == 'l':
-        length = evt.value
-        lengthText.text = '{:1.2f} m'.format(lengthSlider.value)
-        s1.range = (length + ball.radius) * 1.5
-
-def changeBall (evt) : 
-    global length, radiusText
-    if evt.id == 'r':
-        ball.radius = evt.value
-        radiusText.text = '{:1.2f} m'.format(radiusSlider.value)
-        scene.range = (length + ball.radius) * 1.5
-
-s1.append_to_caption("\n \n <b> Parameters : </b> \n \n Mass : ")
-
-massSlider = slider (bind = changeMass, max = 1, min = 0.1, step = 0.1, value = mass, id = 'm')
-massText = wtext(text='{:1.2f} kgs'.format(massSlider.value))
-
-s1.append_to_caption("\n \n Length :")
-
-lengthSlider = slider (bind = changeLength, max = 10, min = 1, step = 1, value = length, id = 'l')
-lengthText = wtext(text='{:1.2f} m'.format(lengthSlider.value))
-
-s1.append_to_caption("\n \n Radius : ")
-
-radiusSlider = slider (bind = changeBall, max = 1, min = 0.1, step = 0.1, value = ball.radius, id = 'r')
-radiusText = wtext(text='{:1.2f} m'.format(radiusSlider.value))
-
-s1.append_to_caption("\n \n")
+amp = .981
+freq = sqrt(9.81) - .1
 
 class SimplePendulum:
-    def __init__(self, canvas, theta, drive, properties):
+    def __init__(self, canvas, drive, graphs):
         self.canvas = canvas
-        self.theta = theta
+        self.theta = radians(30)
         self.omega = 0
         self.alpha = 0
-        self.properties = properties
+        self.length = 1
+        self.mass = .1
         self.drive = drive
 
         self.pivot = vector(0,0,0)
-        self.pos = vector(length * sin(theta), -length * cos(theta), 0)
-        self.string = cylinder(canvas = canvas, pos = self.pivot, axis = ball_pos - self.pivot, color = color.black, radius = 0.01)
-        self.bob = sphere(canvas = canvas, pos = self.pos, radius = 0.1, color = color.red)
+        self.pos = vector(self.length * sin(self.theta), -self.length * cos(self.theta), 0)
+        self.string = cylinder(canvas = canvas, pos = self.pivot, axis = self.pos - self.pivot, color = color.black, radius = 0.01)
+        self.bob = sphere(canvas = canvas, pos = self.pos, radius = .1, color = color.red)
 
+        self.drag_coefficient = .5 * 1.225 * .47 * pi * self.bob.radius ** 2
+        self.graphs = graphs
+        
     def update(self, t, dt):
-        drag_component = - self.properties["drag constant"] * self.properties["length"] / self.properties["mass"] * self.omega * abs(self.omega)
-        g_component = - 9.81 / self.properties["length"] * sin(self.theta)
-        drive_component = self.drive(t) / self.properties["length"] / self.properties["mass"]
+        drag_component = - self.drag_coefficient * self.length / self.mass * self.omega * abs(self.omega)
+        g_component = - 9.81 / self.length * sin(self.theta) #make gravitational acceleration variable
+        drive_force = self.drive(t)
+        drive_component = drive_force / self.length / self.mass
 
         self.alpha = drag_component + g_component + drive_component
 
+
+        # print(drag_component, g_component, drive_component)
+#        print(self.theta)
         # this section will go in an approx method later
         self.omega += self.alpha * dt
         self.theta += self.omega * dt
         self.theta = theta_shift(self.theta)
 
+        self.pos = vector(self.length * sin(self.theta), -self.length * cos(self.theta), 0)
+
+        ke = .5 * self.mass * (self.length * self.omega) ** 2
+        u = self.mass * 9.81 * (self.length * (1 - cos(abs(self.theta))))
+        self.graphs.update_graphs(t, self.theta, self.omega, self.alpha, drive_force, ke, u)
+
     def render(self):
         self.bob.pos = self.pos
         self.string.axis = self.pos - self.pivot
 
+
+
     def render_sliders(self):
         pass
 
-    def render_graphs(self):
-        pass
+class Graphs:
+    def __init__(self):
+        self.t_frame = 10
+
+        self.omega_graph = graph(width=350, height=250, xtitle=("Time (s)"), ytitle=("Angular Velocity (rad/s)"), align='left')
+        self.omega_dots = gdots(color=color.green)
+
+        self.alpha_graph = graph(width=350, height=250, xtitle=("Time (s)"), ytitle=("Angular Acceleration (rad/s^2)"), align='left')
+        self.alpha_dots = gdots(color=color.green)
+
+        self.drive_graph = graph(width=350, height=250, xtitle=("Time (s)"), ytitle=("Driving Force (N)"), align='left')
+        self.drive_dots = gdots(color=color.green)
+
+        self.energy_graph = graph(width=350, height=250, xtitle=("Time (s)"), ytitle=("KE (red) and U (green) (J)"), align='left')
+        self.ke_dots = gdots(color=color.red)
+        self.u_dots = gdots(color=color.green)
+
+        self.phase_graph = graph(width=350, height=250, xtitle=("Angular Position (rad)"), ytitle=("Angular Velocity (rad/s)"), align='left', xmin=-pi, xmax=pi)
+        self.phase_dots = gdots(color=color.red)
+
+        self.graphs = [self.omega_graph, self.alpha_graph, self.drive_graph, self.energy_graph, self.phase_graph]
+
+    def update_graphs(self, t, theta, omega, alpha, drive, ke, u):
+        self.omega_dots.plot(t, omega)
+        self.alpha_dots.plot(t, alpha)
+        self.drive_dots.plot(t, drive)
+        self.ke_dots.plot(t, ke)
+        self.u_dots.plot(t, u)
+        self.phase_dots.plot(theta, omega)
+
+        if (t > self.t_frame):
+            for g in self.graphs:
+                if (g == self.phase_graph):
+                    continue
+                g.xmin = t - self.t_frame
+                g.xmax = t
+
+    def clear_graphs(self):
+        for g in self.graphs:
+            g.delete()
+
 
 #converts theta to equivalent angle in [-pi, pi]
 def theta_shift(theta):
-    theta_shifted = theta % 2 * pi
+    theta_shifted = theta % (2 * pi)
     if (theta_shifted < 0):
         theta_shifted += 2 * pi
     if (theta_shifted > pi):
@@ -175,43 +117,20 @@ def theta_shift(theta):
 
 
 
+def drive(time):
+    return amp * cos(freq * time)
+    
+    
+graphs = Graphs() # breaks when instantiating inside pendulum class
+ball = SimplePendulum(s1, drive, graphs)
 
 
 
 
-while (True) :
-    if (play) :
-        rate(100)
-        
+while (True):
+    rate(100)
+    t += dt
+    ball.update(t, dt)
+    ball.render()
 
-        fdrive = amp * cos(freq * t)
-        # fdrive = amp * cos(.4 * freq * t) * cos(.2 * freq * t)
-    #    fdrive = amp * sin(3 * cos(freq * t) + sin(freq * t))
-    #    fdrive = .5 * (exp(sin(t)) - 1)
-    #    fdrive = amp * sign(sin(t))
-    #    fdrive = 5 * cos(t)+ 2 * sin(3 * t)
-       
-        KE = 1/2 * mass * (velocity**2)
-        U = mass * g * (length * (1 - cos( abs(theta) ) ) )
-
-        omegaDots.plot(t, omega)
-        alphaDots.plot(t, alpha)
-        driveDots.plot(t, fdrive)
-        keDots.plot(t, KE)
-        uDots.plot(t, U)
-        thetaDots.plot(theta, omega)
-        
-        if (t > t_frame):
-            g1.xmin = t - t_frame
-            g1.xmax = t
-            g2.xmin = t - t_frame
-            g2.xmax = t
-            g3.xmin = t - t_frame
-            g3.xmax = t
-            g4.xmin = t - t_frame
-            g4.xmax = t
-        
-        ball_pos = vector(length * sin(theta), -length*cos(theta), 0)
-        
-        t += dt
 

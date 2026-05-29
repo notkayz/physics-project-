@@ -1,5 +1,5 @@
 # Fdb version 4
-["pdflatex"] 1779931010.29348 "c:/Users/kiran/OneDrive/Documents/CS/Senior Year/physics-project/proposal/proposal.tex" "proposal.pdf" "proposal" 1779931011.13067 0
+["pdflatex"] 1780095091.42768 "c:/Users/kiran/OneDrive/Documents/CS/Senior Year/physics-project/proposal/proposal.tex" "proposal.pdf" "proposal" 1780095092.44044 0
   "C:/Users/kiran/AppData/Local/MiKTeX/fonts/map/pdftex/pdftex.map" 1758154368 80909 eab91d9745dd2edfd62a31d53cd5fe15 ""
   "C:/Users/kiran/AppData/Local/MiKTeX/miktex/data/le/pdftex/pdflatex.fmt" 1757477612 24225046 f8f54d2b7fa5dfa97453a28a38e667d1 ""
   "C:/Users/kiran/AppData/Local/Programs/MiKTeX/fonts/tfm/public/cm/cmbx10.tfm" 1136765053 1328 c834bbb027764024c09d3d2bf908b5f0 ""
@@ -26,11 +26,11 @@
   "C:/Users/kiran/AppData/Local/Programs/MiKTeX/tex/latex/graphics/keyval.sty" 1665067579 2671 7e67d78d9b88c845599a85b2d41f2e39 ""
   "C:/Users/kiran/AppData/Local/Programs/MiKTeX/tex/latex/graphics/trig.sty" 1665067579 4023 293ea1c16429fc0c4cf605f4da1791a9 ""
   "C:/Users/kiran/AppData/Local/Programs/MiKTeX/tex/latex/l3backend/l3backend-pdftex.def" 1704400941 30006 57b07afb710ee2f649c65cfbafda39c1 ""
-  "c:/Users/kiran/OneDrive/Documents/CS/Senior Year/physics-project/proposal/proposal.tex" 1779931009 2853 b8737b6e66719cfec2400624cb51da8a ""
+  "c:/Users/kiran/OneDrive/Documents/CS/Senior Year/physics-project/proposal/proposal.tex" 1780095089 2853 e430b444c989adf863fcdbccc32b2bb2 ""
   "graphs.png" 1779930592 124379 c360f5065e376abd7a22da0ce6f8f12f ""
   "pendulum.png" 1779930422 3973 7f2bee1bdb2c9d42d354fac2f70ec207 ""
-  "proposal.aux" 1779931010 268 aaa820d2f762b1360f38a20b420a725e "pdflatex"
-  "proposal.tex" 1779931009 2853 b8737b6e66719cfec2400624cb51da8a ""
+  "proposal.aux" 1780095092 268 aaa820d2f762b1360f38a20b420a725e "pdflatex"
+  "proposal.tex" 1780095089 2853 e430b444c989adf863fcdbccc32b2bb2 ""
   (generated)
   "proposal.aux"
   "proposal.log"

@@ -5,15 +5,16 @@ c1 = canvas(align = "left", width = 500, height = 500,
 c1.userzoom = False
 c1.userpan = False
 
+c2 = canvas(align = "left", width = 500, height = 500, background = color.red)
+
+c2.userzoom = False
+c2.userpan = False
+
 # s2 = canvas(align = "left", width = 500, height = 500, background = color.red)
 
 t = 0
 dt = 0.01
 play = False
-
-# driving force
-amp = .981
-freq = sqrt(9.81) - .1
 
 class SimplePendulum:
     def __init__(self, canvas, drive, graphs):
@@ -24,7 +25,10 @@ class SimplePendulum:
         self.length = 1
         self.mass = .1
         self.radius = .1
+        self.amp = 0.981
+        self.freq = sqrt(9.81) - .1
         self.drive = drive
+
 
         self.pivot = vector(0,0,0)
         self.pos = vector(self.length * sin(self.theta), -self.length * cos(self.theta), 0)
@@ -46,7 +50,7 @@ class SimplePendulum:
     def update(self, t, dt):
         drag_component = - self.drag_coefficient * self.length / self.mass * self.omega * abs(self.omega)
         g_component = - 9.81 / self.length * sin(self.theta) #make gravitational acceleration variable
-        drive_force = self.drive(t)
+        drive_force = self.drive(t, self.amp, self.freq)
         drive_component = drive_force / self.length / self.mass
 
         self.alpha = drag_component + g_component + drive_component
@@ -93,6 +97,23 @@ class SimplePendulum:
         radius_slider.display = wtext(text=f"{radius_slider.value:1.2f} m")
         radius_slider.unit = "m"
 
+        self.canvas.append_to_caption("\n \n Angle: ")
+        angle_slider = slider(bind = self.change_values, max = pi, min = -pi, step = 0.1, value = self.theta)
+        angle_slider.parameter = "theta"
+        angle_slider.display = wtext(text=f"{angle_slider.value:1.2f} radians")
+        angle_slider.unit = "radians"
+
+        self.canvas.append_to_caption("\n \n Amplitude: ")
+        amp_slider = slider(bind = self.change_values, max = 10, min = 0, step = 0.1, value = self.amp)
+        amp_slider.parameter = "amp"
+        amp_slider.display = wtext(text=f"{amp_slider.value:1.2f} ")
+        amp_slider.unit = ""
+
+        self.canvas.append_to_caption("\n \n Frequency: ")
+        freq_slider = slider(bind = self.change_values, max = 10, min = 0, step = 0.1, value = self.freq)
+        freq_slider.parameter = "freq"
+        freq_slider.display = wtext(text=f"{freq_slider.value:1.2f} hz")
+        freq_slider.unit = "hz"
         self.canvas.append_to_caption("\n \n")
 
 class Graphs:
@@ -159,7 +180,7 @@ def resetButton(evt) :
     p1.reset()
     p1.render()
 
-def drive(time):
+def drive(time, amp, freq):
     return amp * cos(freq * time)
     
 toggle_simulation = button(bind = play_button, text = "Play/Pause")
@@ -167,6 +188,9 @@ reset = button(bind = resetButton, text = "Reset")
 
 g1 = Graphs() # breaks when instantiating inside pendulum class
 p1 = SimplePendulum(c1, drive, g1)
+
+g2 = Graphs()
+p2 = SimplePendulum(c2, drive, g2)
 
 while (True):
     rate(100)

@@ -150,6 +150,8 @@ class Graphs:
 
     def clear_graphs(self):
         for d in self.dots:
+            d.xmin = 0
+            d.xmax = 10
             d.delete()
 
 
@@ -188,7 +190,7 @@ p1 = SimplePendulum(c1, drive, g1)
 
 # canvas 2 pendulum 2
 
-c2 = canvas(align = "left", width = 500, height = 500, background = color.red)
+c2 = canvas(align = "left", width = 500, height = 500, background = color.white)
 
 c2.userzoom = False
 c2.userpan = False

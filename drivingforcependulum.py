@@ -124,7 +124,7 @@ def changeBall (evt) :
 
 radiusSlider = slider (bind = changeBall, max = 1, min = 0.1, step = 0.1, value = ball.radius, id = 'r')
 radiusText = wtext(text='{:1.2f} m'.format(radiusSlider.value))
-
+    
 s1.append_to_caption("\n \n")
 
 while (True) :
@@ -178,3 +178,4 @@ while (True) :
         lever.axis = ball_pos - pivot
         
         t += dt
+

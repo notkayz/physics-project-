@@ -1,14 +1,11 @@
 from vpython import *
 # canvas setup and camera 
-c1 = canvas(align = "left", width = 500, height = 500, 
+c1 = canvas(width = 500, height = 500, 
                background = color.white)
 c1.userzoom = False
 c1.userpan = False
 
-c2 = canvas(align = "left", width = 500, height = 500, background = color.red)
 
-c2.userzoom = False
-c2.userpan = False
 
 # s2 = canvas(align = "left", width = 500, height = 500, background = color.red)
 
@@ -179,6 +176,9 @@ def resetButton(evt) :
     g1.clear_graphs()
     p1.reset()
     p1.render()
+    g2.clear_graphs()
+    p2.reset()
+    p2.render()
 
 def drive(time, amp, freq):
     return amp * cos(freq * time)
@@ -189,6 +189,11 @@ reset = button(bind = resetButton, text = "Reset")
 g1 = Graphs() # breaks when instantiating inside pendulum class
 p1 = SimplePendulum(c1, drive, g1)
 
+c2 = canvas(width = 500, height = 500, background = color.red)
+
+c2.userzoom = False
+c2.userpan = False
+
 g2 = Graphs()
 p2 = SimplePendulum(c2, drive, g2)
 
@@ -197,6 +202,8 @@ while (True):
     if (play):
         p1.update(t, dt)
         p1.render()
+        p2.update(t, dt)
+        p2.render()
         t += dt
 
 

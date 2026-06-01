@@ -1,9 +1,9 @@
 from vpython import *
 # canvas setup and camera 
-s1 = canvas(align = "left", width = 500, height = 500, 
+c1 = canvas(align = "left", width = 500, height = 500, 
                background = color.white)
-s1.userzoom = False
-s1.userpan = False
+c1.userzoom = False
+c1.userpan = False
 
 # s2 = canvas(align = "left", width = 500, height = 500, background = color.red)
 
@@ -23,15 +23,25 @@ class SimplePendulum:
         self.alpha = 0
         self.length = 1
         self.mass = .1
+        self.radius = .1
         self.drive = drive
 
         self.pivot = vector(0,0,0)
         self.pos = vector(self.length * sin(self.theta), -self.length * cos(self.theta), 0)
         self.string = cylinder(canvas = canvas, pos = self.pivot, axis = self.pos - self.pivot, color = color.black, radius = 0.01)
-        self.bob = sphere(canvas = canvas, pos = self.pos, radius = .1, color = color.red)
+        self.bob = sphere(canvas = canvas, pos = self.pos, radius = self.radius, color = color.red)
 
         self.drag_coefficient = .5 * 1.225 * .47 * pi * self.bob.radius ** 2
         self.graphs = graphs
+
+        self.create_inputs()
+
+    def change_values(self, evt):
+        setattr(self, evt.parameter, evt.value) #takes parameter as string and sets to value
+        evt.display.text = f"{evt.value:1.2f} {evt.unit}"
+        self.bob.radius = self.radius
+        self.canvas.range = (self.length + self.radius) * 1.5
+        self.render()
         
     def update(self, t, dt):
         drag_component = - self.drag_coefficient * self.length / self.mass * self.omega * abs(self.omega)
@@ -49,20 +59,41 @@ class SimplePendulum:
         self.theta += self.omega * dt
         self.theta = theta_shift(self.theta)
 
-        self.pos = vector(self.length * sin(self.theta), -self.length * cos(self.theta), 0)
-
         ke = .5 * self.mass * (self.length * self.omega) ** 2
         u = self.mass * 9.81 * (self.length * (1 - cos(abs(self.theta))))
         self.graphs.update_graphs(t, self.theta, self.omega, self.alpha, drive_force, ke, u)
 
+    def reset(self):
+        self.theta = radians(30) 
+        self.omega = 0
+        self.alpha = 0
+
     def render(self):
+        self.pos = vector(self.length * sin(self.theta), -self.length * cos(self.theta), 0)
         self.bob.pos = self.pos
         self.string.axis = self.pos - self.pivot
 
+    def create_inputs(self):
+        self.canvas.append_to_caption("\n \n <b> Parameters : </b> \n \n Mass : ")
 
+        mass_slider = slider(bind = self.change_values, max = 1, min = 0.1, step = 0.1, value = self.mass)
+        mass_slider.parameter = "mass"
+        mass_slider.display = wtext(text=f"{mass_slider.value:1.2f} kg")
+        mass_slider.unit = "kg"
 
-    def render_sliders(self):
-        pass
+        self.canvas.append_to_caption("\n \n Length: ")
+        length_slider = slider(bind = self.change_values, max = 10, min = 1, step = 1, value = self.length)
+        length_slider.parameter = "length"
+        length_slider.display = wtext(text=f"{length_slider.value:1.2f} m")
+        length_slider.unit = "m"
+
+        self.canvas.append_to_caption("\n \n Radius: ")
+        radius_slider = slider(bind = self.change_values, max = 1, min = 0.1, step = 0.1, value = self.radius)
+        radius_slider.parameter = "radius"
+        radius_slider.display = wtext(text=f"{radius_slider.value:1.2f} m")
+        radius_slider.unit = "m"
+
+        self.canvas.append_to_caption("\n \n")
 
 class Graphs:
     def __init__(self):
@@ -85,6 +116,7 @@ class Graphs:
         self.phase_dots = gdots(color=color.red)
 
         self.graphs = [self.omega_graph, self.alpha_graph, self.drive_graph, self.energy_graph, self.phase_graph]
+        self.dots = [self.omega_dots, self.alpha_dots, self.drive_dots, self.ke_dots, self.u_dots, self.phase_dots]
 
     def update_graphs(self, t, theta, omega, alpha, drive, ke, u):
         self.omega_dots.plot(t, omega)
@@ -102,8 +134,8 @@ class Graphs:
                 g.xmax = t
 
     def clear_graphs(self):
-        for g in self.graphs:
-            g.delete()
+        for d in self.dots:
+            d.delete()
 
 
 #converts theta to equivalent angle in [-pi, pi]
@@ -115,22 +147,32 @@ def theta_shift(theta):
         theta_shifted -= 2 * pi
     return theta_shifted
 
+def play_button(evt) :
+    global play
+    play = not play
 
+def resetButton(evt) :
+    global t, theta, omega, alpha, play 
+    t = 0
+    play = False
+    g1.clear_graphs()
+    p1.reset()
+    p1.render()
 
 def drive(time):
     return amp * cos(freq * time)
     
-    
-graphs = Graphs() # breaks when instantiating inside pendulum class
-ball = SimplePendulum(s1, drive, graphs)
+toggle_simulation = button(bind = play_button, text = "Play/Pause")
+reset = button(bind = resetButton, text = "Reset")
 
-
-
+g1 = Graphs() # breaks when instantiating inside pendulum class
+p1 = SimplePendulum(c1, drive, g1)
 
 while (True):
     rate(100)
-    t += dt
-    ball.update(t, dt)
-    ball.render()
+    if (play):
+        p1.update(t, dt)
+        p1.render()
+        t += dt
 
 

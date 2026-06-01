@@ -1,14 +1,11 @@
 from vpython import *
-# canvas setup and camera 
-c1 = canvas(width = 500, height = 500, 
+
+# canvas 1 pendulum 1
+
+c1 = canvas(align = "left", width = 500, height = 500, 
                background = color.white)
 c1.userzoom = False
 c1.userpan = False
-
-
-
-# s2 = canvas(align = "left", width = 500, height = 500, background = color.red)
-
 t = 0
 dt = 0.01
 play = False
@@ -95,7 +92,7 @@ class SimplePendulum:
         radius_slider.unit = "m"
 
         self.canvas.append_to_caption("\n \n Angle: ")
-        angle_slider = slider(bind = self.change_values, max = pi, min = -pi, step = 0.1, value = self.theta)
+        angle_slider = slider(bind = self.change_values, max = pi, min = -pi, step = 0.01, value = self.theta)
         angle_slider.parameter = "theta"
         angle_slider.display = wtext(text=f"{angle_slider.value:1.2f} radians")
         angle_slider.unit = "radians"
@@ -114,24 +111,24 @@ class SimplePendulum:
         self.canvas.append_to_caption("\n \n")
 
 class Graphs:
-    def __init__(self):
+    def __init__(self, dots_color):
         self.t_frame = 10
 
         self.omega_graph = graph(width=350, height=250, xtitle=("Time (s)"), ytitle=("Angular Velocity (rad/s)"), align='left')
-        self.omega_dots = gdots(color=color.green)
+        self.omega_dots = gdots(color=dots_color)
 
         self.alpha_graph = graph(width=350, height=250, xtitle=("Time (s)"), ytitle=("Angular Acceleration (rad/s^2)"), align='left')
-        self.alpha_dots = gdots(color=color.green)
+        self.alpha_dots = gdots(color=dots_color)
 
         self.drive_graph = graph(width=350, height=250, xtitle=("Time (s)"), ytitle=("Driving Force (N)"), align='left')
-        self.drive_dots = gdots(color=color.green)
+        self.drive_dots = gdots(color=dots_color)
 
         self.energy_graph = graph(width=350, height=250, xtitle=("Time (s)"), ytitle=("KE (red) and U (green) (J)"), align='left')
-        self.ke_dots = gdots(color=color.red)
-        self.u_dots = gdots(color=color.green)
+        self.ke_dots = gdots(color=color.green)
+        self.u_dots = gdots(color=dots_color)
 
         self.phase_graph = graph(width=350, height=250, xtitle=("Angular Position (rad)"), ytitle=("Angular Velocity (rad/s)"), align='left', xmin=-pi, xmax=pi)
-        self.phase_dots = gdots(color=color.red)
+        self.phase_dots = gdots(color=dots_color)
 
         self.graphs = [self.omega_graph, self.alpha_graph, self.drive_graph, self.energy_graph, self.phase_graph]
         self.dots = [self.omega_dots, self.alpha_dots, self.drive_dots, self.ke_dots, self.u_dots, self.phase_dots]
@@ -186,15 +183,17 @@ def drive(time, amp, freq):
 toggle_simulation = button(bind = play_button, text = "Play/Pause")
 reset = button(bind = resetButton, text = "Reset")
 
-g1 = Graphs() # breaks when instantiating inside pendulum class
+g1 = Graphs(color.red) # breaks when instantiating inside pendulum class
 p1 = SimplePendulum(c1, drive, g1)
 
-c2 = canvas(width = 500, height = 500, background = color.red)
+# canvas 2 pendulum 2
+
+c2 = canvas(align = "left", width = 500, height = 500, background = color.red)
 
 c2.userzoom = False
 c2.userpan = False
 
-g2 = Graphs()
+g2 = Graphs(color.blue)
 p2 = SimplePendulum(c2, drive, g2)
 
 while (True):

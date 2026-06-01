@@ -151,7 +151,7 @@ class Graphs:
     def clear_graphs(self):
         for d in self.dots:
             d.xmin = 0
-            d.xmax = 10
+            d.xmax = 0
             d.delete()
 
 

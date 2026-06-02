@@ -1,4 +1,5 @@
 from vpython import *
+
 scene.append_to_caption("\n\n")
 
 c1 = canvas(align = "left", width = 500, height = 500, background = color.white)
@@ -72,19 +73,65 @@ class Graphs:
         for lines in self.phase_lines:
             lines.delete()
 
-class SimplePendulum:
+class Pendulum:
     def __init__(self, canvas, drive, line_color):
         self.canvas = canvas
-        self.theta = radians(30)
+        self.theta = pi/6
         self.omega = 0
         self.alpha = 0
+
+        self.drive = drive
+
+    def change_values(self, evt):
+        pass
+
+    def update(self, t):
+        self.drive_component = self.drive_force / self.length / self.mass
+
+        self.alpha = self.drag_component + self.g_component + self.drive_component
+
+        if (t * 100 // 1 % 2 == 0):
+            self.graphs.update_graphs(t, self.theta, self.omega, self.alpha, self.drive_force, self.ke, self.u)
+
+    def approximate(self, dt):
+        self.omega += self.alpha * dt
+        self.theta += self.omega * dt
+        if (self.theta > pi or self.theta < -pi): 
+            self.theta = self.theta_shift()
+            self.graphs.shifted = True
+
+    def reset(self):
+        self.theta = radians(30) 
+        self.omega = 0
+        self.alpha = 0
+
+    def render(self):
+        self.pos = vector(self.length * sin(self.theta), -self.length * cos(self.theta), 0)
+
+    def create_inputs(self):
+        pass
+
+    def hide_inputs(self):
+        for input in self.inputs_list:
+            input.delete()
+
+    #converts theta to equivalent angle in [-pi, pi]
+    def theta_shift(self):
+        theta_shifted = self.theta % (2 * pi)
+        if (theta_shifted < 0):
+            theta_shifted += 2 * pi
+        if (theta_shifted > pi):
+            theta_shifted -= 2 * pi
+        return theta_shifted
+
+class SimplePendulum(Pendulum):
+    def __init__(self, canvas, drive, line_color):
+        Pendulum.__init__(self, canvas, drive, line_color)
         self.length = 1
         self.mass = .1
         self.radius = .1
         self.amp = 0.981
         self.freq = sqrt(9.81) - .1
-        self.drive = drive
-
 
         self.pivot = vector(0,0,0)
         self.pos = vector(self.length * sin(self.theta), -self.length * cos(self.theta), 0)
@@ -96,9 +143,10 @@ class SimplePendulum:
         self.create_inputs()
         self.graphs = Graphs(line_color)
 
-        
-
     def change_values(self, evt):
+        if not hasattr(evt, 'parameter'):
+            return
+    
         if (evt.parameter == "theta"):
             setattr(self, evt.parameter, evt.value * pi / 180)
         else:
@@ -109,87 +157,68 @@ class SimplePendulum:
         self.render()
         
     def update(self, t, dt):
-        drag_component = - self.drag_coefficient * self.length / self.mass * self.omega * abs(self.omega)
-        g_component = - 9.81 / self.length * sin(self.theta) #make gravitational acceleration variable
-        drive_force = self.drive(t, self.amp, self.freq)
-        drive_component = drive_force / self.length / self.mass
+        self.drag_component = - self.drag_coefficient * self.length / self.mass * self.omega * abs(self.omega)
+        self.g_component = - 9.81 / self.length * sin(self.theta) #make gravitational acceleration variable
+        self.drive_force = self.drive(t, self.amp, self.freq)
 
-        self.alpha = drag_component + g_component + drive_component
+        Pendulum.approximate(self, dt)
 
-
-        # print(drag_component, g_component, drive_component)
-#        print(self.theta)
-        # this section will go in an approx method later
-        self.omega += self.alpha * dt
-        self.theta += self.omega * dt
-        if (self.theta > pi or self.theta < -pi): 
-            self.theta = theta_shift(self.theta)
-            self.graphs.shifted = True
-
-        ke = .5 * self.mass * (self.length * self.omega) ** 2
-        u = self.mass * 9.81 * (self.length * (1 - cos(abs(self.theta))))
-        if (t * 100 // 1 % 2 == 0):
-            self.graphs.update_graphs(t, self.theta, self.omega, self.alpha, drive_force, ke, u)
+        self.ke = .5 * self.mass * (self.length * self.omega) ** 2
+        self.u = self.mass * 9.81 * (self.length * (1 - cos(abs(self.theta))))
+        Pendulum.update(self, t)
 
     def reset(self):
-        self.theta = radians(30) 
-        self.omega = 0
-        self.alpha = 0
+        Pendulum.reset(self)
 
     def render(self):
-        self.pos = vector(self.length * sin(self.theta), -self.length * cos(self.theta), 0)
+        Pendulum.render(self)
+
         self.bob.pos = self.pos
         self.string.axis = self.pos - self.pivot
 
     def create_inputs(self):
-
         user_inputs.append_to_caption("\n \n <b> Parameters : </b> \n \n Mass : ")
 
-        mass_slider = slider(bind = self.change_values, max = 1, min = 0.1, step = 0.1, value = self.mass)
-        mass_slider.parameter = "mass"
-        mass_slider.display = wtext(text=f"{mass_slider.value:1.2f} kg")
-        mass_slider.unit = "kg"
+        self.mass_slider = slider(bind = self.change_values, max = 10, min = 0.1, step = 0.1, value = self.mass)
+        self.mass_slider.parameter = "mass"
+        self.mass_slider.display = wtext(text=f"{self.mass_slider.value:1.2f} kg")
+        self.mass_slider.unit = "kg"
 
         user_inputs.append_to_caption("\n \n Length: ")
-        length_slider = slider(bind = self.change_values, max = 10, min = 1, step = 1, value = self.length)
-        length_slider.parameter = "length"
-        length_slider.display = wtext(text=f"{length_slider.value:1.2f} m")
-        length_slider.unit = "m"
+        self.length_slider = slider(bind = self.change_values, max = 10, min = .1, step = .1, value = self.length)
+        self.length_slider.parameter = "length"
+        self.length_slider.display = wtext(text=f"{self.length_slider.value:1.2f} m")
+        self.length_slider.unit = "m"
 
         user_inputs.append_to_caption("\n \n Radius: ")
-        radius_slider = slider(bind = self.change_values, max = 1, min = 0.1, step = 0.1, value = self.radius)
-        radius_slider.parameter = "radius"
-        radius_slider.display = wtext(text=f"{radius_slider.value:1.2f} m")
-        radius_slider.unit = "m"
+        self.radius_slider = slider(bind = self.change_values, max = 1, min = 0.1, step = 0.1, value = self.radius)
+        self.radius_slider.parameter = "radius"
+        self.radius_slider.display = wtext(text=f"{self.radius_slider.value:1.2f} m")
+        self.radius_slider.unit = "m"
 
         user_inputs.append_to_caption("\n \n Angle: ")
-        angle_slider = slider(bind = self.change_values, max = 180, min = -180, step = 1, value = self.theta * 180 / pi)        
-        angle_slider.parameter = "theta"
-        angle_slider.display = wtext(text=f"{angle_slider.value:1.2f} deg")
-        angle_slider.unit = "deg"
+        self.angle_slider = slider(bind = self.change_values, max = 180, min = -180, step = 1, value = self.theta * 180 / pi)        
+        self.angle_slider.parameter = "theta"
+        self.angle_slider.display = wtext(text=f"{self.angle_slider.value:1.2f} deg")
+        self.angle_slider.unit = "deg"
 
         user_inputs.append_to_caption("\n \n Amplitude: ")
-        amp_slider = slider(bind = self.change_values, max = 10, min = 0, step = 0.1, value = self.amp)
-        amp_slider.parameter = "amp"
-        amp_slider.display = wtext(text=f"{amp_slider.value:1.2f} N")
-        amp_slider.unit = "N"
+        self.amp_slider = slider(bind = self.change_values, max = 10, min = 0, step = 0.1, value = self.amp)
+        self.amp_slider.parameter = "amp"
+        self.amp_slider.display = wtext(text=f"{self.amp_slider.value:1.2f} N")
+        self.amp_slider.unit = "N"
 
         user_inputs.append_to_caption("\n \n Frequency: ")
-        freq_slider = slider(bind = self.change_values, max = 1, min = 0, step = .01, value = self.freq)        
-        freq_slider.parameter = "freq"
-        freq_slider.display = wtext(text=f"{freq_slider.value:1.2f} hz")
-        freq_slider.unit = "hz"
+        self.freq_slider = slider(bind = self.change_values, max = 1, min = 0, step = .01, value = self.freq)        
+        self.freq_slider.parameter = "freq"
+        self.freq_slider.display = wtext(text=f"{self.freq_slider.value:1.2f} hz")
+        self.freq_slider.unit = "hz"
         user_inputs.append_to_caption("\n \n")
 
+        self.inputs_list = [self.mass_slider, self.length_slider, self.radius_slider, self.angle_slider, self.amp_slider, self.freq_slider]
 
-#converts theta to equivalent angle in [-pi, pi]
-def theta_shift(theta):
-    theta_shifted = theta % (2 * pi)
-    if (theta_shifted < 0):
-        theta_shifted += 2 * pi
-    if (theta_shifted > pi):
-        theta_shifted -= 2 * pi
-    return theta_shifted
+    def hide_inputs(self):
+        Pendulum.hide_inputs(self)
 
 def play_button(evt) :
     global play
@@ -205,6 +234,7 @@ def resetButton(evt) :
     p2.graphs.clear_graphs()    
     p2.reset()
     p2.render()
+
 
 def drive(time, amp, freq):
     return amp * cos(freq * time)

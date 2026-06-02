@@ -1,5 +1,7 @@
 from vpython import *
 
+scene.append_to_caption("\n\n")
+
 c1 = canvas(align = "left", width = 500, height = 500, background = color.white)
 c1.userzoom = False
 c1.userpan = False
@@ -10,7 +12,7 @@ c2.userpan = False
 
 scene.append_to_caption("\n\n")
 
-user_inputs = scene
+user_inputs = canvas (width = 1000, height = 1, background = color.white)
 
 t = 0
 dt = 0.01

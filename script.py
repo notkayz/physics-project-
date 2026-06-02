@@ -1,5 +1,4 @@
 from vpython import *
-
 scene.append_to_caption("\n\n")
 
 c1 = canvas(align = "left", width = 500, height = 500, background = color.white)
@@ -40,6 +39,8 @@ class Graphs:
 
         self.graphs = [self.omega_graph, self.alpha_graph, self.drive_graph, self.energy_graph, self.phase_graph]
         self.curves = [self.omega_line, self.alpha_line, self.drive_line, self.ke_line, self.u_line, self.phase_line]
+        self.phase_lines = [self.phase_line] # keeps track of all created phase lines for deletion
+        
         self.shifted = False
         self.line_color = line_color
 
@@ -50,6 +51,7 @@ class Graphs:
         self.ke_line.plot(t, ke)
         self.u_line.plot(t, u)
         if (self.shifted): # prevents line from being drawn when theta wraps from -pi to pi
+            self.phase_lines.append(self.phase_line)
             self.phase_line = gcurve(graph=self.phase_graph, color=self.line_color)
             self.shifted = False
         self.curves[-1] = self.phase_line
@@ -63,10 +65,12 @@ class Graphs:
                 g.xmax = t
 
     def clear_graphs(self):
-        for d in self.curves:
-            d.xmin = 0
-            d.xmax = 0
-            d.delete()
+        for c in self.curves:
+            c.xmin = 0
+            c.xmax = 0
+            c.delete()
+        for lines in self.phase_lines:
+            lines.delete()
 
 class SimplePendulum:
     def __init__(self, canvas, drive, line_color):

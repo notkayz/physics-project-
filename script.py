@@ -18,8 +18,58 @@ t = 0
 dt = 0.01
 play = False
 
+class Graphs:
+    def __init__(self, line_color):
+        self.t_frame = 10
+
+        self.omega_graph = graph(width=350, height=250, xtitle=("Time (s)"), ytitle=("Angular Velocity (rad/s)"), align='left')
+        self.omega_line = gcurve(color=line_color)
+
+        self.alpha_graph = graph(width=350, height=250, xtitle=("Time (s)"), ytitle=("Angular Acceleration (rad/s^2)"), align='left')
+        self.alpha_line = gcurve(color=line_color)
+
+        self.drive_graph = graph(width=350, height=250, xtitle=("Time (s)"), ytitle=("Driving Force (N)"), align='left')
+        self.drive_line = gcurve(color=line_color)
+
+        self.energy_graph = graph(width=350, height=250, xtitle=("Time (s)"), ytitle=(f"KE (green) and U ({line_color}) (J)"), align='left')
+        self.ke_line = gcurve(color=color.green)
+        self.u_line = gcurve(color=line_color)
+
+        self.phase_graph = graph(width=350, height=250, xtitle=("Angular Position (rad)"), ytitle=("Angular Velocity (rad/s)"), align='left', xmin=-pi, xmax=pi)
+        self.phase_line = gcurve(color=line_color)
+
+        self.graphs = [self.omega_graph, self.alpha_graph, self.drive_graph, self.energy_graph, self.phase_graph]
+        self.curves = [self.omega_line, self.alpha_line, self.drive_line, self.ke_line, self.u_line, self.phase_line]
+        self.shifted = False
+        self.line_color = line_color
+
+    def update_graphs(self, t, theta, omega, alpha, drive, ke, u):
+        self.omega_line.plot(t, omega)
+        self.alpha_line.plot(t, alpha)
+        self.drive_line.plot(t, drive)
+        self.ke_line.plot(t, ke)
+        self.u_line.plot(t, u)
+        if (self.shifted): # prevents line from being drawn when theta wraps from -pi to pi
+            self.phase_line = gcurve(graph=self.phase_graph, color=self.line_color)
+            self.shifted = False
+        self.curves[-1] = self.phase_line
+        self.phase_line.plot(theta, omega) 
+
+        if (t > self.t_frame):
+            for g in self.graphs:
+                if (g == self.phase_graph):
+                    continue
+                g.xmin = t - self.t_frame
+                g.xmax = t
+
+    def clear_graphs(self):
+        for d in self.curves:
+            d.xmin = 0
+            d.xmax = 0
+            d.delete()
+
 class SimplePendulum:
-    def __init__(self, canvas, drive, graphs):
+    def __init__(self, canvas, drive, line_color):
         self.canvas = canvas
         self.theta = radians(30)
         self.omega = 0
@@ -38,12 +88,15 @@ class SimplePendulum:
         self.bob = sphere(canvas = canvas, pos = self.pos, radius = self.radius, color = color.red)
 
         self.drag_coefficient = .5 * 1.225 * .47 * pi * self.bob.radius ** 2
-        self.graphs = graphs
+        self.graphs = Graphs(line_color)
 
         self.create_inputs()
 
     def change_values(self, evt):
-        setattr(self, evt.parameter, evt.value) #takes parameter as string and sets to value
+        if (evt.parameter == "theta"):
+            setattr(self, evt.parameter, evt.value * pi / 180)
+        else:
+            setattr(self, evt.parameter, evt.value) #takes parameter as string and sets to value
         evt.display.text = f"{evt.value:1.2f} {evt.unit}"
         self.bob.radius = self.radius
         self.canvas.range = (self.length + self.radius) * 1.5
@@ -63,11 +116,14 @@ class SimplePendulum:
         # this section will go in an approx method later
         self.omega += self.alpha * dt
         self.theta += self.omega * dt
-        self.theta = theta_shift(self.theta)
+        if (self.theta > pi or self.theta < -pi): 
+            self.theta = theta_shift(self.theta)
+            self.graphs.shifted = True
 
         ke = .5 * self.mass * (self.length * self.omega) ** 2
         u = self.mass * 9.81 * (self.length * (1 - cos(abs(self.theta))))
-        self.graphs.update_graphs(t, self.theta, self.omega, self.alpha, drive_force, ke, u)
+        if (t * 100 // 1 % 2 == 0):
+            self.graphs.update_graphs(t, self.theta, self.omega, self.alpha, drive_force, ke, u)
 
     def reset(self):
         self.theta = radians(30) 
@@ -101,67 +157,23 @@ class SimplePendulum:
         radius_slider.unit = "m"
 
         user_inputs.append_to_caption("\n \n Angle: ")
-        angle_slider = slider(bind = self.change_values, max = pi, min = -pi, step = 0.01, value = self.theta)
+        angle_slider = slider(bind = self.change_values, max = 180, min = -180, step = 1, value = self.theta * 180 / pi)        
         angle_slider.parameter = "theta"
-        angle_slider.display = wtext(text=f"{angle_slider.value:1.2f} radians")
-        angle_slider.unit = "radians"
+        angle_slider.display = wtext(text=f"{angle_slider.value:1.2f} deg")
+        angle_slider.unit = "deg"
 
         user_inputs.append_to_caption("\n \n Amplitude: ")
         amp_slider = slider(bind = self.change_values, max = 10, min = 0, step = 0.1, value = self.amp)
         amp_slider.parameter = "amp"
-        amp_slider.display = wtext(text=f"{amp_slider.value:1.2f} ")
-        amp_slider.unit = ""
+        amp_slider.display = wtext(text=f"{amp_slider.value:1.2f} N")
+        amp_slider.unit = "N"
 
         user_inputs.append_to_caption("\n \n Frequency: ")
-        freq_slider = slider(bind = self.change_values, max = 10, min = 0, step = 0.1, value = self.freq)
+        freq_slider = slider(bind = self.change_values, max = 1, min = 0, step = .01, value = self.freq)        
         freq_slider.parameter = "freq"
         freq_slider.display = wtext(text=f"{freq_slider.value:1.2f} hz")
         freq_slider.unit = "hz"
         user_inputs.append_to_caption("\n \n")
-
-class Graphs:
-    def __init__(self, dots_color):
-        self.t_frame = 10
-
-        self.omega_graph = graph(width=350, height=250, xtitle=("Time (s)"), ytitle=("Angular Velocity (rad/s)"), align='left')
-        self.omega_dots = gdots(color=dots_color)
-
-        self.alpha_graph = graph(width=350, height=250, xtitle=("Time (s)"), ytitle=("Angular Acceleration (rad/s^2)"), align='left')
-        self.alpha_dots = gdots(color=dots_color)
-
-        self.drive_graph = graph(width=350, height=250, xtitle=("Time (s)"), ytitle=("Driving Force (N)"), align='left')
-        self.drive_dots = gdots(color=dots_color)
-
-        self.energy_graph = graph(width=350, height=250, xtitle=("Time (s)"), ytitle=("KE (red) and U (green) (J)"), align='left')
-        self.ke_dots = gdots(color=color.green)
-        self.u_dots = gdots(color=dots_color)
-
-        self.phase_graph = graph(width=350, height=250, xtitle=("Angular Position (rad)"), ytitle=("Angular Velocity (rad/s)"), align='left', xmin=-pi, xmax=pi)
-        self.phase_dots = gdots(color=dots_color)
-
-        self.graphs = [self.omega_graph, self.alpha_graph, self.drive_graph, self.energy_graph, self.phase_graph]
-        self.dots = [self.omega_dots, self.alpha_dots, self.drive_dots, self.ke_dots, self.u_dots, self.phase_dots]
-
-    def update_graphs(self, t, theta, omega, alpha, drive, ke, u):
-        self.omega_dots.plot(t, omega)
-        self.alpha_dots.plot(t, alpha)
-        self.drive_dots.plot(t, drive)
-        self.ke_dots.plot(t, ke)
-        self.u_dots.plot(t, u)
-        self.phase_dots.plot(theta, omega)
-
-        if (t > self.t_frame):
-            for g in self.graphs:
-                if (g == self.phase_graph):
-                    continue
-                g.xmin = t - self.t_frame
-                g.xmax = t
-
-    def clear_graphs(self):
-        for d in self.dots:
-            d.xmin = 0
-            d.xmax = 0
-            d.delete()
 
 
 #converts theta to equivalent angle in [-pi, pi]
@@ -194,14 +206,8 @@ def drive(time, amp, freq):
 toggle_simulation = button(bind = play_button, text = "Play/Pause")
 reset = button(bind = resetButton, text = "Reset")
 
-p1 = SimplePendulum(c1, drive, None)
-p2 = SimplePendulum(c2, drive, None)
-
-g1 = Graphs(color.red)
-g2 = Graphs(color.blue)
-
-p1.graphs = g1
-p2.graphs = g2
+p1 = SimplePendulum(c1, drive, color.red)
+p2 = SimplePendulum(c2, drive, color.blue)
 
 while (True):
     rate(100)

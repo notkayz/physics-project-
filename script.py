@@ -2,11 +2,11 @@ from vpython import *
 
 scene.append_to_caption("\n\n")
 
-c1 = canvas(align = "left", width = 500, height = 500, background = color.white)
+c1 = canvas(align = "right", width = 500, height = 500, background = color.white)
 c1.userzoom = False
 c1.userpan = False
 
-c2 = canvas(align = "left", width = 500, height = 500, background = color.white)
+c2 = canvas(align = "right", width = 500, height = 500, background = color.white)
 c2.userzoom = False
 c2.userpan = False
 
@@ -88,9 +88,11 @@ class SimplePendulum:
         self.bob = sphere(canvas = canvas, pos = self.pos, radius = self.radius, color = color.red)
 
         self.drag_coefficient = .5 * 1.225 * .47 * pi * self.bob.radius ** 2
+        
+        self.create_inputs()
         self.graphs = Graphs(line_color)
 
-        self.create_inputs()
+        
 
     def change_values(self, evt):
         if (evt.parameter == "theta"):
@@ -193,10 +195,10 @@ def resetButton(evt) :
     global t, theta, omega, alpha, play 
     t = 0
     play = False
-    g1.clear_graphs()
+    p1.graphs.clear_graphs()
     p1.reset()
     p1.render()
-    g2.clear_graphs()
+    p2.graphs.clear_graphs()    
     p2.reset()
     p2.render()
 
@@ -208,6 +210,7 @@ reset = button(bind = resetButton, text = "Reset")
 
 p1 = SimplePendulum(c1, drive, color.red)
 p2 = SimplePendulum(c2, drive, color.blue)
+
 
 while (True):
     rate(100)

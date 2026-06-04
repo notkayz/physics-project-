@@ -94,12 +94,13 @@ class Pendulum:
 
     def update(self, t):
 
-        self.alpha = self.drag_component + self.g_component + self.drive_component
+#        self.alpha = self.drag_component + self.g_component + self.drive_component
 
         if (t * 100 // 1 % 2 == 0):
             self.graphs.update_graphs(t, self.theta, self.omega, self.alpha, self.drive_force, self.ke, self.u)
 
     def euler_kromer(self, dt):
+        self.alpha = self.get_alpha(t, self.theta, self.omega)
         self.omega += self.alpha * dt
         self.theta += self.omega * dt
         if (self.theta > pi or self.theta < -pi): 
@@ -110,7 +111,20 @@ class Pendulum:
         pass
     
     def rk4(self, dt):
-        pass
+        k1_theta = self.omega
+        k1_omega = self.get_alpha(t, self.theta, self.omega)
+        
+        k2_theta = self.omega + k1_omega * dt / 2
+        k2_omega = self.get_alpha(t + dt / 2, self.theta + k1_theta * dt / 2, self.omega + k1_omega * dt / 2)
+        
+        k3_theta = self.omega + k2_omega * dt / 2
+        k3_omega = self.get_alpha(t + dt / 2, self.theta + k2_theta * dt / 2, self.omega + k2_omega * dt / 2)
+        
+        k4_theta = self.omega + k3_omega * dt 
+        k4_omega = self.get_alpha(t + dt, self.theta + k3_theta * dt, self.omega + k3_omega * dt)
+        
+        self.theta += dt * (k1_theta + 2 * k2_theta + 2 * k3_theta + k4_theta) / 6 
+        self.omega += dt * (k1_omega + 2 * k2_omega + 2 * k3_omega + k4_omega) / 6
 
     def reset(self):
         self.theta = radians(30) 
@@ -129,6 +143,7 @@ class Pendulum:
             
     def change_method(self, evt):
         self.current_method = self.method_dict[evt.selected]
+        print(self.current_method)
 
     #converts theta to equivalent angle in [-pi, pi]
     def theta_shift(self):
@@ -172,18 +187,31 @@ class SimplePendulum(Pendulum):
         self.canvas.range = (self.length + self.radius) * 1.5
         self.render()
         
+    def change_method(self, evt):
+        print(self.current_method)
+        self.current_method = self.method_dict[evt.selected]
+        print(self.current_method)
+        
     def update(self, t, dt):
-        self.drag_component = - self.drag_coefficient * self.length / self.mass * self.omega * abs(self.omega)
-        self.g_component = - 9.81 / self.length * sin(self.theta) #make gravitational acceleration variable
-        self.drive_force = self.drive(t, self.amp, self.freq)
-        self.drive_component = self.drive_force / self.length / self.mass
+#        self.drag_component = - self.drag_coefficient * self.length / self.mass * self.omega * abs(self.omega)
+#        self.g_component = - 9.81 / self.length * sin(self.theta)
+#        self.drive_force = self.drive(t, self.amp, self.freq)
+#        self.drive_component = self.drive_force / self.length / self.mass
 
         self.current_method(dt)
 
         self.ke = .5 * self.mass * (self.length * self.omega) ** 2
         self.u = self.mass * 9.81 * (self.length * (1 - cos(abs(self.theta))))
         Pendulum.update(self, t)
-
+    
+    def get_alpha(self, time, theta, omega):
+        self.drag_component = - self.drag_coefficient * self.length / self.mass * omega * abs(omega)
+        self.g_component = - 9.81 / self.length * sin(theta)
+        self.drive_force = self.drive(time, self.amp, self.freq)
+        self.drive_component = self.drive_force / self.length / self.mass      
+        
+        return self.drag_component + self.g_component + self.drive_component
+        
     def reset(self):
         Pendulum.reset(self)
 
@@ -272,16 +300,24 @@ class RodPendulum(Pendulum):
         self.render()
         
     def update(self, t, dt):
-        self.drag_component = - 3 / 4 * self.drag_coefficient * self.length ** 2 / self.mass * self.omega * abs(self.omega)
-        self.g_component = - 3 / 2 * 9.81 / self.length * sin(self.theta) 
-        self.drive_force = self.drive(t, self.amp, self.freq)
-        self.drive_component = 3 / 2 * self.drive_force / self.length / self.mass # this assumes the drive force is applied at the COM
-        
         self.current_method(dt)
 
         self.ke = .5 * 1 / 3 * self.mass * (self.length * self.omega) ** 2
         self.u = self.mass * 9.81 * self.length / 2 * (1 - cos(abs(self.theta))) # center of mass
         Pendulum.update(self, t)
+        
+    def get_alpha(self, time, theta, omega):
+        self.drag_component = - 3 / 4 * self.drag_coefficient * self.length ** 2 / self.mass * omega * abs(omega)
+        self.g_component = - 3 / 2 * 9.81 / self.length * sin(theta) 
+        self.drive_force = self.drive(time, self.amp, self.freq)
+        self.drive_component = 3 / 2 * self.drive_force / self.length / self.mass # this assumes the drive force is applied at the COM
+        
+        return self.drag_component + self.g_component + self.drive_component
+
+    def update_graphs(self):
+        self.ke = .5 * 1 / 3 * self.mass * (self.length * self.omega) ** 2
+        self.u = self.mass * 9.81 * self.length / 2 * (1 - cos(abs(self.theta))) # center of mass
+        self.graphs.update_graphs()
 
     def reset(self):
         Pendulum.reset(self)
@@ -343,6 +379,7 @@ class RodPendulum(Pendulum):
 def play_button(evt) :
     global play
     play = not play
+    print(p1.omega - p2.omega)
 
 def resetButton(evt) :
     global t, theta, omega, alpha, play 
@@ -363,7 +400,7 @@ toggle_simulation = button(bind = play_button, text = "Play/Pause")
 reset = button(bind = resetButton, text = "Reset")
 
 p1 = SimplePendulum(c1, drive, "red")
-p2 = RodPendulum(c2, drive, "blue")
+p2 = SimplePendulum(c2, drive, "blue")
 
 
 while (True):

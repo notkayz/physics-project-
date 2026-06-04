@@ -2,6 +2,7 @@ from vpython import *
 
 scene.append_to_caption("\n\n")
 
+scene.visible = False
 c1 = canvas(align = "left", width = 500, height = 500, background = color.white)
 c1.userzoom = False
 c1.userpan = False
@@ -19,8 +20,10 @@ dt = 0.01
 play = False
 
 class Graphs:
-    def __init__(self, canvas, line_color):
+    def __init__(self, canvas, color_name):
         self.t_frame = 10
+        
+        line_color = getattr(color, color_name)
         
 #        canvas.append_to_caption("\n \n")
         self.omega_graph = graph(width=350, height=250, xtitle=("Time (s)"), ytitle=("Angular Velocity (rad/s)"), align="left")
@@ -32,7 +35,7 @@ class Graphs:
         self.drive_graph = graph(width=350, height=250, xtitle=("Time (s)"), ytitle=("Driving Force (N)"), align="left")
         self.drive_line = gcurve(color=line_color)
 
-        self.energy_graph = graph(width=350, height=250, xtitle=("Time (s)"), ytitle=(f"KE (green) and U ({line_color}) (J)"), align="left")
+        self.energy_graph = graph(width=350, height=250, xtitle=("Time (s)"), ytitle=(f"KE (green) and U ({color_name}) (J)"), align="left")
         self.ke_line = gcurve(color=color.green)
         self.u_line = gcurve(color=line_color)
 
@@ -75,14 +78,15 @@ class Graphs:
             lines.delete()
 
 class Pendulum:
-    def __init__(self, canvas, drive, line_color):
+    def __init__(self, canvas, drive):
         self.canvas = canvas
         self.theta = pi/6
         self.omega = 0
         self.alpha = 0
         self.drive = drive
+        self.pivot_ball = sphere(canvas = canvas, pos = vec(0, 0, 0), radius = .02, color = color.green)
         
-        self.method_dict = {"Euler-Kromer": Pendulum.euler_kromer(), "Runge-Kutta Order 2": Pendulum.rk2(), "Runge-Kutta Order 4": Pendulum.rk4()}
+        self.method_dict = {"Euler-Kromer": Pendulum.euler_kromer, "Runge-Kutta Order 2": Pendulum.rk2, "Runge-Kutta Order 4": Pendulum.rk4}
         self.current_method = self.euler_kromer
 
     def change_values(self, evt):
@@ -96,8 +100,6 @@ class Pendulum:
             self.graphs.update_graphs(t, self.theta, self.omega, self.alpha, self.drive_force, self.ke, self.u)
 
     def euler_kromer(self, dt):
-        print("a")
-        print(self, dt)
         self.omega += self.alpha * dt
         self.theta += self.omega * dt
         if (self.theta > pi or self.theta < -pi): 
@@ -119,16 +121,14 @@ class Pendulum:
         self.pos = vector(self.length * sin(self.theta), -self.length * cos(self.theta), 0)
 
     def create_inputs(self):
-        self.method_dropdown = menu(bind=Pendulum.change_method(self), choices=["Euler-Kromer", "Runge-Kutta Order 2", "Runge-Kutta Order 4"], selected=self.current_method)
+        self.method_dropdown = menu(bind=self.change_method, choices=["Euler-Kromer", "Runge-Kutta Order 2", "Runge-Kutta Order 4"], selected=self.current_method)
 
     def hide_inputs(self):
         for input in self.inputs_list:
             input.delete()
             
     def change_method(self, evt):
-        print(self.current_method)
         self.current_method = self.method_dict[evt.selected]
-        print(self.current_method)
 
     #converts theta to equivalent angle in [-pi, pi]
     def theta_shift(self):
@@ -141,7 +141,7 @@ class Pendulum:
 
 class SimplePendulum(Pendulum):
     def __init__(self, canvas, drive, line_color):
-        Pendulum.__init__(self, canvas, drive, line_color)
+        Pendulum.__init__(self, canvas, drive)
         self.length = 1
         self.mass = .1
         self.radius = .1
@@ -151,7 +151,7 @@ class SimplePendulum(Pendulum):
         self.pivot = vector(0,0,0)
         self.pos = vector(self.length * sin(self.theta), -self.length * cos(self.theta), 0)
         self.string = cylinder(canvas = canvas, pos = self.pivot, axis = self.pos - self.pivot, color = color.black, radius = 0.01)
-        self.bob = sphere(canvas = canvas, pos = self.pos, radius = self.radius, color = color.red)
+        self.bob = sphere(canvas = canvas, pos = self.pos, radius = self.radius, color = getattr(color, line_color))
 
         self.drag_coefficient = .5 * 1.225 * .47 * pi * self.bob.radius ** 2
         
@@ -177,8 +177,7 @@ class SimplePendulum(Pendulum):
         self.g_component = - 9.81 / self.length * sin(self.theta) #make gravitational acceleration variable
         self.drive_force = self.drive(t, self.amp, self.freq)
         self.drive_component = self.drive_force / self.length / self.mass
-        
-        print(self,dt)
+
         self.current_method(dt)
 
         self.ke = .5 * self.mass * (self.length * self.omega) ** 2
@@ -226,7 +225,6 @@ class SimplePendulum(Pendulum):
         self.amp_slider.display = wtext(text=f"{self.amp_slider.value:1.2f} N")
         self.amp_slider.unit = "N"
 
-        print(self.freq)
         user_inputs.append_to_caption("\n \n Frequency: ")
         self.freq_slider = slider(bind = self.change_values, max = 1, min = 0, step = .01, value = self.freq)        
         self.freq_slider.parameter = "freq"
@@ -243,7 +241,7 @@ class SimplePendulum(Pendulum):
 
 class RodPendulum(Pendulum):
     def __init__(self, canvas, drive, line_color):
-        Pendulum.__init__(self, canvas, drive, line_color)
+        Pendulum.__init__(self, canvas, drive)
         self.length = 1
         self.mass = .1
         self.radius = .1
@@ -252,7 +250,7 @@ class RodPendulum(Pendulum):
 
         self.pivot = vector(0,0,0)
         self.pos = vector(self.length * sin(self.theta), -self.length * cos(self.theta), 0)
-        self.rod = cylinder(canvas = canvas, pos = self.pivot, axis = self.pos - self.pivot, color = color.black, radius = self.radius)
+        self.rod = cylinder(canvas = canvas, pos = self.pivot, axis = self.pos - self.pivot, color = getattr(color, line_color), radius = self.radius)
 
         self.drag_coefficient = .5 * 1.225 * 1.17 * 2 * self.radius * self.length
         
@@ -269,7 +267,7 @@ class RodPendulum(Pendulum):
         else:
             setattr(self, evt.parameter, evt.value) #takes parameter as string and sets to value
         evt.display.text = f"{evt.value:1.2f} {evt.unit}"
-        self.cylinder.radius = self.radius
+        self.rod.radius = self.radius
         self.canvas.range = self.length * 1.5
         self.render()
         
@@ -308,7 +306,7 @@ class RodPendulum(Pendulum):
         self.length_slider.unit = "m"
 
         user_inputs.append_to_caption("\n \n Radius: ")
-        self.radius_slider = slider(bind = self.change_values, max = 1, min = 0.1, step = 0.1, value = self.radius)
+        self.radius_slider = slider(bind = self.change_values, max = 1, min = 0.01, step = 0.01, value = self.radius)
         self.radius_slider.parameter = "radius"
         self.radius_slider.display = wtext(text=f"{self.radius_slider.value:1.2f} m")
         self.radius_slider.unit = "m"
@@ -364,8 +362,8 @@ def drive(time, amp, freq):
 toggle_simulation = button(bind = play_button, text = "Play/Pause")
 reset = button(bind = resetButton, text = "Reset")
 
-p1 = SimplePendulum(c1, drive, color.red)
-p2 = RodPendulum(c2, drive, color.blue)
+p1 = SimplePendulum(c1, drive, "red")
+p2 = RodPendulum(c2, drive, "blue")
 
 
 while (True):

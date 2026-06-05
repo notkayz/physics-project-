@@ -26,16 +26,16 @@ class Graphs:
         line_color = getattr(color, color_name)
         
 #        canvas.append_to_caption("\n \n")
-        self.omega_graph = graph(width=350, height=250, xtitle=("Time (s)"), ytitle=("Angular Velocity (rad/s)"), align="left")
+        self.omega_graph = graph(width=350, height=250, xtitle=("Time (s)"), ytitle=("Angular Velocity (rad/s)"), align="left", xmin=0, xmax=10)
         self.omega_line = gcurve(color=line_color)
 
-        self.alpha_graph = graph(width=350, height=250, xtitle=("Time (s)"), ytitle=("Angular Acceleration (rad/s^2)"), align="left")
+        self.alpha_graph = graph(width=350, height=250, xtitle=("Time (s)"), ytitle=("Angular Acceleration (rad/s^2)"), align="left", xmin=0, xmax=10)
         self.alpha_line = gcurve(color=line_color)
 
-        self.drive_graph = graph(width=350, height=250, xtitle=("Time (s)"), ytitle=("Driving Force (N)"), align="left")
+        self.drive_graph = graph(width=350, height=250, xtitle=("Time (s)"), ytitle=("Driving Force (N)"), align="left", xmin=0, xmax=10)
         self.drive_line = gcurve(color=line_color)
 
-        self.energy_graph = graph(width=350, height=250, xtitle=("Time (s)"), ytitle=(f"KE (green) and U ({color_name}) (J)"), align="left")
+        self.energy_graph = graph(width=350, height=250, xtitle=("Time (s)"), ytitle=(f"KE (green) and U ({color_name}) (J)"), align="left", xmin=0, xmax=10)
         self.ke_line = gcurve(color=color.green)
         self.u_line = gcurve(color=line_color)
 
@@ -70,15 +70,18 @@ class Graphs:
                 g.xmax = t
 
     def clear_graphs(self):
+        for g in self.graphs:
+            if (g == self.phase_graph):
+                continue
+            g.xmin = 0
+            g.xmax = 10
         for c in self.curves:
-            c.xmin = 0
-            c.xmax = 0
             c.delete()
         for lines in self.phase_lines:
             lines.delete()
 
 class Pendulum:
-    def __init__(self, canvas, drive, method):
+    def __init__(self, canvas, drive):
         self.canvas = canvas
         self.theta = pi/6
         self.omega = 0
@@ -86,35 +89,22 @@ class Pendulum:
         self.drive = drive
         self.pivot_ball = sphere(canvas = canvas, pos = vec(0, 0, 0), radius = .02, color = color.green)
         
-        self.method_dict = {"Euler-Kromer": self.euler_kromer, "Runge-Kutta Order 2": self.rk2, "Runge-Kutta Order 4": self.rk4}
-        print(method)
-        print(self.method_dict[method])
-        self.current_method = self.method_dict[method]
-        print(self.method_dict[method])
-#        print(self.method_dict["Runge-Kutta Order 4"])
+        self.current_method = self.euler_kromer
+        self.current_method_name = "Euler-Kromer"
 
-    def change_values(self, evt):
-        pass
-
-    def update(self, t):
-
-#        self.alpha = self.drag_component + self.g_component + self.drive_component
-
+    def update(self):
         if (t * 100 // 1 % 2 == 0):
             self.graphs.update_graphs(t, self.theta, self.omega, self.alpha, self.drive_force, self.ke, self.u)
 
-    def euler_kromer(self, dt):
+    def euler_kromer(self):
         self.alpha = self.get_alpha(t, self.theta, self.omega)
         self.omega += self.alpha * dt
         self.theta += self.omega * dt
         if (self.theta > pi or self.theta < -pi): 
             self.theta = self.theta_shift()
             self.graphs.shifted = True
-            
-    def rk2(self, dt):
-        pass
     
-    def rk4(self, dt):
+    def rk4(self):
         k1_theta = self.omega
         k1_omega = self.get_alpha(t, self.theta, self.omega)
         
@@ -143,17 +133,25 @@ class Pendulum:
         self.pos = vector(self.length * sin(self.theta), -self.length * cos(self.theta), 0)
 
     def create_inputs(self):
-        self.method_dropdown = menu(bind=self.change_method, choices=["Euler-Kromer", "Runge-Kutta Order 2", "Runge-Kutta Order 4"], selected=self.current_method)
-        print(self.current_method)
+        self.method_dropdown = menu(bind=self.change_method, choices=["Euler-Kromer", "Runge-Kutta Order 2", "Runge-Kutta Order 4"], selected=self.current_method_name)
+        self.method_dropdown.pendulum = self # to get around glowscript class issues
 
     def hide_inputs(self):
         for input in self.inputs_list:
             input.delete()
             
     def change_method(self, evt):
-#        print(self)
-        self.current_method = self.method_dict[evt.selected]
-        print(self.current_method)
+#        print(evt.pendulum.current_method_name)
+        if evt.index == 0: 
+            evt.pendulum.current_method = evt.pendulum.euler_kromer
+            evt.pendulum.current_method_name = "Euler-Kromer"
+        elif evt.index == 1: 
+            evt.pendulum.current_method = evt.pendulum.rk2
+            evt.pendulum.current_method_name = "Runge-Kutta Order 2"
+        elif evt.index == 2: 
+            evt.pendulum.current_method = evt.pendulum.rk4
+            evt.pendulum.current_method_name = "Runge-Kutta Order 4"
+#        print(evt.pendulum.current_method_name)
 
     #converts theta to equivalent angle in [-pi, pi]
     def theta_shift(self):
@@ -165,8 +163,8 @@ class Pendulum:
         return theta_shifted
 
 class SimplePendulum(Pendulum):
-    def __init__(self, canvas, drive, line_color, method):
-        Pendulum.__init__(self, canvas, drive, method)
+    def __init__(self, canvas, drive, line_color):
+        Pendulum.__init__(self, canvas, drive)
         self.length = 1
         self.mass = .1
         self.radius = .1
@@ -198,21 +196,14 @@ class SimplePendulum(Pendulum):
         self.render()
         
     def change_method(self, evt):
-        print(self.current_method)
-        self.current_method = self.method_dict[evt.selected]
-        print(self.current_method)
+        Pendulum.change_method(self, evt)
         
-    def update(self, t, dt):
-#        self.drag_component = - self.drag_coefficient * self.length / self.mass * self.omega * abs(self.omega)
-#        self.g_component = - 9.81 / self.length * sin(self.theta)
-#        self.drive_force = self.drive(t, self.amp, self.freq)
-#        self.drive_component = self.drive_force / self.length / self.mass
-
-        self.current_method(dt)
+    def update(self):
+        self.current_method()
 
         self.ke = .5 * self.mass * (self.length * self.omega) ** 2
         self.u = self.mass * 9.81 * (self.length * (1 - cos(abs(self.theta))))
-        Pendulum.update(self, t)
+        Pendulum.update(self)
     
     def get_alpha(self, time, theta, omega):
         self.drag_component = - self.drag_coefficient * self.length / self.mass * omega * abs(omega)
@@ -278,8 +269,8 @@ class SimplePendulum(Pendulum):
         Pendulum.hide_inputs(self)
 
 class RodPendulum(Pendulum):
-    def __init__(self, canvas, drive, line_color, method):
-        Pendulum.__init__(self, canvas, drive, method)
+    def __init__(self, canvas, drive, line_color):
+        Pendulum.__init__(self, canvas, drive)
         self.length = 1
         self.mass = .1
         self.radius = .1
@@ -309,12 +300,12 @@ class RodPendulum(Pendulum):
         self.canvas.range = self.length * 1.5
         self.render()
         
-    def update(self, t, dt):
-        self.current_method(dt)
+    def update(self):
+        self.current_method()
 
         self.ke = .5 * 1 / 3 * self.mass * (self.length * self.omega) ** 2
         self.u = self.mass * 9.81 * self.length / 2 * (1 - cos(abs(self.theta))) # center of mass
-        Pendulum.update(self, t)
+        Pendulum.update(self)
         
     def get_alpha(self, time, theta, omega):
         self.drag_component = - 3 / 4 * self.drag_coefficient * self.length ** 2 / self.mass * omega * abs(omega)
@@ -383,13 +374,9 @@ class RodPendulum(Pendulum):
     def hide_inputs(self):
         Pendulum.hide_inputs(self)
 
-
-
-
 def play_button(evt) :
     global play
     play = not play
-    print(p1.omega - p2.omega)
 
 def resetButton(evt) :
     global t, theta, omega, alpha, play 
@@ -409,16 +396,16 @@ def drive(time, amp, freq):
 toggle_simulation = button(bind = play_button, text = "Play/Pause")
 reset = button(bind = resetButton, text = "Reset")
 
-p1 = SimplePendulum(c1, drive, "red", "Euler-Kromer")
-p2 = SimplePendulum(c2, drive, "blue", "Runge-Kutta Order 4")
+p1 = SimplePendulum(c1, drive, "red")
+p2 = RodPendulum(c2, drive, "blue")
 
 
 while (True):
     rate(100)
     if (play):
-        p1.update(t, dt)
+        p1.update()
         p1.render()
-        p2.update(t, dt)
+        p2.update()
         p2.render()
         t += dt
 

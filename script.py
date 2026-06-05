@@ -78,7 +78,7 @@ class Graphs:
             lines.delete()
 
 class Pendulum:
-    def __init__(self, canvas, drive):
+    def __init__(self, canvas, drive, method):
         self.canvas = canvas
         self.theta = pi/6
         self.omega = 0
@@ -86,8 +86,12 @@ class Pendulum:
         self.drive = drive
         self.pivot_ball = sphere(canvas = canvas, pos = vec(0, 0, 0), radius = .02, color = color.green)
         
-        self.method_dict = {"Euler-Kromer": Pendulum.euler_kromer, "Runge-Kutta Order 2": Pendulum.rk2, "Runge-Kutta Order 4": Pendulum.rk4}
-        self.current_method = self.euler_kromer
+        self.method_dict = {"Euler-Kromer": self.euler_kromer, "Runge-Kutta Order 2": self.rk2, "Runge-Kutta Order 4": self.rk4}
+        print(method)
+        print(self.method_dict[method])
+        self.current_method = self.method_dict[method]
+        print(self.method_dict[method])
+#        print(self.method_dict["Runge-Kutta Order 4"])
 
     def change_values(self, evt):
         pass
@@ -125,6 +129,10 @@ class Pendulum:
         
         self.theta += dt * (k1_theta + 2 * k2_theta + 2 * k3_theta + k4_theta) / 6 
         self.omega += dt * (k1_omega + 2 * k2_omega + 2 * k3_omega + k4_omega) / 6
+        
+        if (self.theta > pi or self.theta < -pi): 
+            self.theta = self.theta_shift()
+            self.graphs.shifted = True
 
     def reset(self):
         self.theta = radians(30) 
@@ -136,12 +144,14 @@ class Pendulum:
 
     def create_inputs(self):
         self.method_dropdown = menu(bind=self.change_method, choices=["Euler-Kromer", "Runge-Kutta Order 2", "Runge-Kutta Order 4"], selected=self.current_method)
+        print(self.current_method)
 
     def hide_inputs(self):
         for input in self.inputs_list:
             input.delete()
             
     def change_method(self, evt):
+#        print(self)
         self.current_method = self.method_dict[evt.selected]
         print(self.current_method)
 
@@ -155,8 +165,8 @@ class Pendulum:
         return theta_shifted
 
 class SimplePendulum(Pendulum):
-    def __init__(self, canvas, drive, line_color):
-        Pendulum.__init__(self, canvas, drive)
+    def __init__(self, canvas, drive, line_color, method):
+        Pendulum.__init__(self, canvas, drive, method)
         self.length = 1
         self.mass = .1
         self.radius = .1
@@ -268,8 +278,8 @@ class SimplePendulum(Pendulum):
         Pendulum.hide_inputs(self)
 
 class RodPendulum(Pendulum):
-    def __init__(self, canvas, drive, line_color):
-        Pendulum.__init__(self, canvas, drive)
+    def __init__(self, canvas, drive, line_color, method):
+        Pendulum.__init__(self, canvas, drive, method)
         self.length = 1
         self.mass = .1
         self.radius = .1
@@ -399,8 +409,8 @@ def drive(time, amp, freq):
 toggle_simulation = button(bind = play_button, text = "Play/Pause")
 reset = button(bind = resetButton, text = "Reset")
 
-p1 = SimplePendulum(c1, drive, "red")
-p2 = SimplePendulum(c2, drive, "blue")
+p1 = SimplePendulum(c1, drive, "red", "Euler-Kromer")
+p2 = SimplePendulum(c2, drive, "blue", "Runge-Kutta Order 4")
 
 
 while (True):

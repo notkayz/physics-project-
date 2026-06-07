@@ -3,39 +3,28 @@ from vpython import *
 scene.append_to_caption("\n\n")
 
 scene.visible = False
-c1 = canvas(align = "left", width = 500, height = 500, background = color.white)
-c1.userzoom = False
-c1.userpan = False
-
-c2 = canvas(align = "right", width = 500, height = 500, background = color.white)
-c2.userzoom = False
-c2.userpan = False
-
-scene.append_to_caption("\n\n")
-
-user_inputs = canvas (width = 1000, height = 1, background = color.white)
 
 t = 0
 dt = 0.01
 play = False
 
 class Graphs:
-    def __init__(self, canvas, color_name):
+    def __init__(self, c, color_name):
         self.t_frame = 10
         
         line_color = getattr(color, color_name)
-        
 #        canvas.append_to_caption("\n \n")
-        self.omega_graph = graph(width=350, height=250, xtitle=("Time (s)"), ytitle=("Angular Velocity (rad/s)"), align="left", xmin=0, xmax=10)
+        c.select()
+        self.omega_graph = graph(width=350, height=250, xtitle=("Time (s)"), ytitle=("Angular Velocity (rad/s)"), align="left")
         self.omega_line = gcurve(color=line_color)
-
-        self.alpha_graph = graph(width=350, height=250, xtitle=("Time (s)"), ytitle=("Angular Acceleration (rad/s^2)"), align="left", xmin=0, xmax=10)
+        
+        self.alpha_graph = graph(width=350, height=250, xtitle=("Time (s)"), ytitle=("Angular Acceleration (rad/s^2)"), align="left")
         self.alpha_line = gcurve(color=line_color)
 
-        self.drive_graph = graph(width=350, height=250, xtitle=("Time (s)"), ytitle=("Driving Force (N)"), align="left", xmin=0, xmax=10)
+        self.drive_graph = graph(width=350, height=250, xtitle=("Time (s)"), ytitle=("Driving Force (N)"), align="left")
         self.drive_line = gcurve(color=line_color)
 
-        self.energy_graph = graph(width=350, height=250, xtitle=("Time (s)"), ytitle=(f"KE (green) and U ({color_name}) (J)"), align="left", xmin=0, xmax=10)
+        self.energy_graph = graph(width=350, height=250, xtitle=("Time (s)"), ytitle=(f"KE (green) and U ({color_name}) (J)"), align="left")
         self.ke_line = gcurve(color=color.green)
         self.u_line = gcurve(color=line_color)
 
@@ -88,6 +77,7 @@ class Pendulum:
         self.alpha = 0
         self.drive = drive
         self.pivot_ball = sphere(canvas = canvas, pos = vec(0, 0, 0), radius = .02, color = color.green)
+        self.air_density = 1.225
         
         self.current_method = self.euler_kromer
         self.current_method_name = "Euler-Kromer"
@@ -163,8 +153,8 @@ class Pendulum:
         return theta_shifted
 
 class SimplePendulum(Pendulum):
-    def __init__(self, canvas, drive, line_color):
-        Pendulum.__init__(self, canvas, drive)
+    def __init__(self, c, drive, line_color, user_inputs):
+        Pendulum.__init__(self, c, drive)
         self.length = 1
         self.mass = .1
         self.radius = .1
@@ -173,14 +163,15 @@ class SimplePendulum(Pendulum):
 
         self.pivot = vector(0,0,0)
         self.pos = vector(self.length * sin(self.theta), -self.length * cos(self.theta), 0)
-        self.string = cylinder(canvas = canvas, pos = self.pivot, axis = self.pos - self.pivot, color = color.black, radius = 0.01)
-        self.bob = sphere(canvas = canvas, pos = self.pos, radius = self.radius, color = getattr(color, line_color))
-
-        self.drag_coefficient = .5 * 1.225 * .47 * pi * self.bob.radius ** 2
+        self.string = cylinder(canvas = c, pos = self.pivot, axis = self.pos - self.pivot, color = color.black, radius = 0.01)
+        self.bob = sphere(canvas = c, pos = self.pos, radius = self.radius, color = getattr(color, line_color))
+    
+        self.drag_coefficient = .5 * self.air_density * .47 * pi * self.bob.radius ** 2
         
-        self.create_inputs()
-        self.graphs = Graphs(self.canvas, line_color)
-        self.canvas.range = (self.length + self.radius) * 1.5
+        user_inputs.select()
+        self.create_inputs(user_inputs)
+        self.graphs = Graphs(c, line_color)
+        c.range = (self.length + self.radius) * 1.5
 
     def change_values(self, evt):
         if not hasattr(evt, 'parameter'):
@@ -193,6 +184,7 @@ class SimplePendulum(Pendulum):
         evt.display.text = f"{evt.value:1.2f} {evt.unit}"
         self.bob.radius = self.radius
         self.canvas.range = (self.length + self.radius) * 1.5
+        self.drag_coefficient = .5 * self.air_density * 1.17 * 2 * self.radius * self.length
         self.render()
         
     def change_method(self, evt):
@@ -200,7 +192,7 @@ class SimplePendulum(Pendulum):
         
     def update(self):
         self.current_method()
-
+        
         self.ke = .5 * self.mass * (self.length * self.omega) ** 2
         self.u = self.mass * 9.81 * (self.length * (1 - cos(abs(self.theta))))
         Pendulum.update(self)
@@ -222,7 +214,7 @@ class SimplePendulum(Pendulum):
         self.bob.pos = self.pos
         self.string.axis = self.pos - self.pivot
 
-    def create_inputs(self):
+    def create_inputs(self, user_inputs):
         user_inputs.append_to_caption("\n \n <b> Parameters : </b> \n \n Mass : ")
 
         self.mass_slider = slider(bind = self.change_values, max = 10, min = 0.1, step = 0.1, value = self.mass)
@@ -230,31 +222,37 @@ class SimplePendulum(Pendulum):
         self.mass_slider.display = wtext(text=f"{self.mass_slider.value:1.2f} kg")
         self.mass_slider.unit = "kg"
 
-        user_inputs.append_to_caption("\n \n Length: ")
+        user_inputs.append_to_caption("\n \n String Length: ")
         self.length_slider = slider(bind = self.change_values, max = 10, min = .1, step = .1, value = self.length)
         self.length_slider.parameter = "length"
         self.length_slider.display = wtext(text=f"{self.length_slider.value:1.2f} m")
         self.length_slider.unit = "m"
 
-        user_inputs.append_to_caption("\n \n Radius: ")
+        user_inputs.append_to_caption("\n \n Ball Radius: ")
         self.radius_slider = slider(bind = self.change_values, max = 1, min = 0.1, step = 0.1, value = self.radius)
         self.radius_slider.parameter = "radius"
         self.radius_slider.display = wtext(text=f"{self.radius_slider.value:1.2f} m")
         self.radius_slider.unit = "m"
 
-        user_inputs.append_to_caption("\n \n Angle: ")
+        user_inputs.append_to_caption("\n \n Starting Angle: ")
         self.angle_slider = slider(bind = self.change_values, max = 180, min = -180, step = 1, value = self.theta * 180 / pi)        
         self.angle_slider.parameter = "theta"
         self.angle_slider.display = wtext(text=f"{self.angle_slider.value:1.2f} deg")
         self.angle_slider.unit = "deg"
+        
+        user_inputs.append_to_caption("\n \n Air Density: ")
+        self.density_slider = slider(bind = self.change_values, max = 5, min = 0, step = .001, value = self.air_density)        
+        self.density_slider.parameter = "air_density"
+        self.density_slider.display = wtext(text=f"{self.density_slider.value:1.3f} kg/m^3")
+        self.density_slider.unit = "kg/m^3"
 
-        user_inputs.append_to_caption("\n \n Amplitude: ")
+        user_inputs.append_to_caption("\n \n Drive Amplitude: ")
         self.amp_slider = slider(bind = self.change_values, max = 10, min = 0, step = 0.1, value = self.amp)
         self.amp_slider.parameter = "amp"
         self.amp_slider.display = wtext(text=f"{self.amp_slider.value:1.2f} N")
         self.amp_slider.unit = "N"
 
-        user_inputs.append_to_caption("\n \n Frequency: ")
+        user_inputs.append_to_caption("\n \n Drive Frequency: ")
         self.freq_slider = slider(bind = self.change_values, max = 1, min = 0, step = .01, value = self.freq)        
         self.freq_slider.parameter = "freq"
         self.freq_slider.display = wtext(text=f"{self.freq_slider.value:1.2f} hz")
@@ -269,8 +267,8 @@ class SimplePendulum(Pendulum):
         Pendulum.hide_inputs(self)
 
 class RodPendulum(Pendulum):
-    def __init__(self, canvas, drive, line_color):
-        Pendulum.__init__(self, canvas, drive)
+    def __init__(self, c, drive, line_color, user_inputs):
+        Pendulum.__init__(self, c, drive)
         self.length = 1
         self.mass = .1
         self.radius = .1
@@ -279,13 +277,14 @@ class RodPendulum(Pendulum):
 
         self.pivot = vector(0,0,0)
         self.pos = vector(self.length * sin(self.theta), -self.length * cos(self.theta), 0)
-        self.rod = cylinder(canvas = canvas, pos = self.pivot, axis = self.pos - self.pivot, color = getattr(color, line_color), radius = self.radius)
+        self.rod = cylinder(canvas = c, pos = self.pivot, axis = self.pos - self.pivot, color = getattr(color, line_color), radius = self.radius)
 
-        self.drag_coefficient = .5 * 1.225 * 1.17 * 2 * self.radius * self.length
+        self.drag_coefficient = .5 * self.air_density * 1.17 * 2 * self.radius * self.length
         
-        self.create_inputs()
-        self.graphs = Graphs(self.canvas, line_color)
-        self.canvas.range = (self.length + self.radius) * 1.5
+        user_inputs.select()
+        self.create_inputs(user_inputs)
+        self.graphs = Graphs(c, line_color)
+        c.range = (self.length + self.radius) * 1.5
 
     def change_values(self, evt):
         if not hasattr(evt, 'parameter'):
@@ -298,6 +297,7 @@ class RodPendulum(Pendulum):
         evt.display.text = f"{evt.value:1.2f} {evt.unit}"
         self.rod.radius = self.radius
         self.canvas.range = self.length * 1.5
+        self.drag_coefficient = .5 * self.air_density * 1.17 * 2 * self.radius * self.length
         self.render()
         
     def update(self):
@@ -328,7 +328,7 @@ class RodPendulum(Pendulum):
 
         self.rod.axis = self.pos - self.pivot
 
-    def create_inputs(self):
+    def create_inputs(self, user_inputs):
         user_inputs.append_to_caption("\n \n <b> Parameters : </b> \n \n Mass : ")
 
         self.mass_slider = slider(bind = self.change_values, max = 10, min = 0.1, step = 0.1, value = self.mass)
@@ -336,31 +336,37 @@ class RodPendulum(Pendulum):
         self.mass_slider.display = wtext(text=f"{self.mass_slider.value:1.2f} kg")
         self.mass_slider.unit = "kg"
 
-        user_inputs.append_to_caption("\n \n Length: ")
+        user_inputs.append_to_caption("\n \n Rod Length: ")
         self.length_slider = slider(bind = self.change_values, max = 10, min = .1, step = .1, value = self.length)
         self.length_slider.parameter = "length"
         self.length_slider.display = wtext(text=f"{self.length_slider.value:1.2f} m")
         self.length_slider.unit = "m"
 
-        user_inputs.append_to_caption("\n \n Radius: ")
+        user_inputs.append_to_caption("\n \n Rod Radius: ")
         self.radius_slider = slider(bind = self.change_values, max = 1, min = 0.01, step = 0.01, value = self.radius)
         self.radius_slider.parameter = "radius"
         self.radius_slider.display = wtext(text=f"{self.radius_slider.value:1.2f} m")
         self.radius_slider.unit = "m"
 
-        user_inputs.append_to_caption("\n \n Angle: ")
+        user_inputs.append_to_caption("\n \n Starting Angle: ")
         self.angle_slider = slider(bind = self.change_values, max = 180, min = -180, step = 1, value = self.theta * 180 / pi)        
         self.angle_slider.parameter = "theta"
         self.angle_slider.display = wtext(text=f"{self.angle_slider.value:1.2f} deg")
         self.angle_slider.unit = "deg"
+        
+        user_inputs.append_to_caption("\n \n Air Density: ")
+        self.density_slider = slider(bind = self.change_values, max = 5, min = 0, step = .001, value = self.air_density)        
+        self.density_slider.parameter = "air_density"
+        self.density_slider.display = wtext(text=f"{self.density_slider.value:1.3f} kg/m^3")
+        self.density_slider.unit = "kg/m^3"
 
-        user_inputs.append_to_caption("\n \n Amplitude: ")
+        user_inputs.append_to_caption("\n \n Drive Amplitude: ")
         self.amp_slider = slider(bind = self.change_values, max = 10, min = 0, step = 0.1, value = self.amp)
         self.amp_slider.parameter = "amp"
         self.amp_slider.display = wtext(text=f"{self.amp_slider.value:1.2f} N")
         self.amp_slider.unit = "N"
 
-        user_inputs.append_to_caption("\n \n Frequency: ")
+        user_inputs.append_to_caption("\n \n Drive Frequency: ")
         self.freq_slider = slider(bind = self.change_values, max = 1, min = 0, step = .01, value = self.freq)        
         self.freq_slider.parameter = "freq"
         self.freq_slider.display = wtext(text=f"{self.freq_slider.value:1.2f} hz")
@@ -393,18 +399,37 @@ def resetButton(evt) :
 def drive(time, amp, freq):
     return amp * cos(freq * 2 * pi * time)
     
+
+c1 = canvas(width=500, height=500, background = color.white, align="left")
+c1.userzoom = False
+c1.userpan = False
+c2 = canvas(width=500, height=500, background = color.white, align="left")
+c2.userzoom = False
+c2.userpan = False
+
+scene.append_to_caption("\n\n")
+
+user_inputs = canvas(width = 1000, height = 1, background = color.white)
+
 toggle_simulation = button(bind = play_button, text = "Play/Pause")
 reset = button(bind = resetButton, text = "Reset")
+#c1.append_to_caption("\n\n")
+c2.append_to_caption("\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n")
+p1 = SimplePendulum(c1, drive, "red", user_inputs)
+p2 = RodPendulum(c2, drive, "blue", user_inputs)
 
-p1 = SimplePendulum(c1, drive, "red")
-p2 = RodPendulum(c2, drive, "blue")
+scene.append_to_caption("\n\n")
+#g_canvas = canvas(width=1000, height=1000, background = color.white)
 
+#p1.graphs = Graphs(g_canvas, "red")
+#p2.graphs = Graphs(g_canvas, "blue")
 
 while (True):
     rate(100)
     if (play):
         p1.update()
         p1.render()
+        # add check that c2 is active
         p2.update()
         p2.render()
         t += dt

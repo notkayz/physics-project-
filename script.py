@@ -215,6 +215,7 @@ class SimplePendulum(Pendulum):
         self.string.axis = self.pos - self.pivot
 
     def create_inputs(self, user_inputs):
+        
         user_inputs.append_to_caption("\n \n <b> Parameters : </b> \n \n Mass : ")
 
         self.mass_slider = slider(bind = self.change_values, max = 10, min = 0.1, step = 0.1, value = self.mass)
@@ -384,7 +385,7 @@ def play_button(evt) :
     global play
     play = not play
 
-def resetButton(evt) :
+def reset_button(evt) :
     global t, theta, omega, alpha, play 
     t = 0
     play = False
@@ -394,7 +395,15 @@ def resetButton(evt) :
     p2.graphs.clear_graphs()    
     p2.reset()
     p2.render()
-
+    
+def toggle_canvas(evt):
+    if (evt.c2.active):
+        evt.text = "Enable Pendulum 2"
+        print("activated --> disactivated")
+    else:
+        evt.text = "Disable Pendulum 2"
+        print("disactivated --> activated")
+    evt.c2.active = not evt.c2.active
 
 def drive(time, amp, freq):
     return amp * cos(freq * 2 * pi * time)
@@ -406,13 +415,17 @@ c1.userpan = False
 c2 = canvas(width=500, height=500, background = color.white, align="left")
 c2.userzoom = False
 c2.userpan = False
+c2.active = True
 
 scene.append_to_caption("\n\n")
 
 user_inputs = canvas(width = 1000, height = 1, background = color.white)
 
 toggle_simulation = button(bind = play_button, text = "Play/Pause")
-reset = button(bind = resetButton, text = "Reset")
+reset = button(bind = reset_button, text = "Reset")
+disable_c2 = button(bind = toggle_canvas, text = "Disable Pendulum 2")
+disable_c2.c2 = c2
+
 #c1.append_to_caption("\n\n")
 c2.append_to_caption("\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n")
 p1 = SimplePendulum(c1, drive, "red", user_inputs)
@@ -430,8 +443,9 @@ while (True):
         p1.update()
         p1.render()
         # add check that c2 is active
-        p2.update()
-        p2.render()
+        if (c2.active):
+            p2.update()
+            p2.render()
         t += dt
 
 

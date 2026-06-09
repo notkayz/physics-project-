@@ -15,16 +15,16 @@ class Graphs:
         line_color = getattr(color, color_name)
 #        canvas.append_to_caption("\n \n")
         c.select()
-        self.omega_graph = graph(width=350, height=250, xtitle=("Time (s)"), ytitle=("Angular Velocity (rad/s)"), align="left")
+        self.omega_graph = graph(width=350, height=250, xtitle=("Time (s)"), ytitle=("Angular Velocity (rad/s)"), align="left", xmin=0, xmax=10)
         self.omega_line = gcurve(color=line_color)
         
-        self.alpha_graph = graph(width=350, height=250, xtitle=("Time (s)"), ytitle=("Angular Acceleration (rad/s^2)"), align="left")
+        self.alpha_graph = graph(width=350, height=250, xtitle=("Time (s)"), ytitle=("Angular Acceleration (rad/s^2)"), align="left", xmin=0, xmax=10)
         self.alpha_line = gcurve(color=line_color)
 
-        self.drive_graph = graph(width=350, height=250, xtitle=("Time (s)"), ytitle=("Driving Force (N)"), align="left")
+        self.drive_graph = graph(width=350, height=250, xtitle=("Time (s)"), ytitle=("Driving Force (N)"), align="left", xmin=0, xmax=10)
         self.drive_line = gcurve(color=line_color)
 
-        self.energy_graph = graph(width=350, height=250, xtitle=("Time (s)"), ytitle=(f"KE (green) and U ({color_name}) (J)"), align="left")
+        self.energy_graph = graph(width=350, height=250, xtitle=("Time (s)"), ytitle=(f"KE (green) and U ({color_name}) (J)"), align="left", xmin=0, xmax=10)
         self.ke_line = gcurve(color=color.green)
         self.u_line = gcurve(color=line_color)
 
@@ -68,6 +68,10 @@ class Graphs:
             c.delete()
         for lines in self.phase_lines:
             lines.delete()
+            
+    def delete_graphs(self):
+        for g in self.graphs:
+            g.delete()
 
 class Pendulum:
     def __init__(self, canvas, drive):
@@ -122,9 +126,12 @@ class Pendulum:
     def render(self):
         self.pos = vector(self.length * sin(self.theta), -self.length * cos(self.theta), 0)
 
-    def create_inputs(self):
+    def create_inputs(self, user_inputs):
+        user_inputs.append_to_caption("\n Approximation Method: ")
+        
         self.method_dropdown = menu(bind=self.change_method, choices=["Euler-Kromer", "Runge-Kutta Order 2", "Runge-Kutta Order 4"], selected=self.current_method_name)
         self.method_dropdown.pendulum = self # to get around glowscript class issues
+        
 
     def hide_inputs(self):
         for input in self.inputs_list:
@@ -153,13 +160,16 @@ class Pendulum:
         return theta_shifted
 
 class SimplePendulum(Pendulum):
-    def __init__(self, c, drive, line_color, user_inputs):
+    def __init__(self, c, drive, line_color, user_inputs, graphs):
         Pendulum.__init__(self, c, drive)
+        
         self.length = 1
         self.mass = .1
         self.radius = .1
         self.amp = 0.981
         self.freq = sqrt(9.81 / self.length) / 2 / pi - .1
+        self.type = "Simple Pendulum"
+        self.line_color = line_color
 
         self.pivot = vector(0,0,0)
         self.pos = vector(self.length * sin(self.theta), -self.length * cos(self.theta), 0)
@@ -167,10 +177,10 @@ class SimplePendulum(Pendulum):
         self.bob = sphere(canvas = c, pos = self.pos, radius = self.radius, color = getattr(color, line_color))
     
         self.drag_coefficient = .5 * self.air_density * .47 * pi * self.bob.radius ** 2
-        
+
         user_inputs.select()
         self.create_inputs(user_inputs)
-        self.graphs = Graphs(c, line_color)
+        self.graphs = graphs
         c.range = (self.length + self.radius) * 1.5
 
     def change_values(self, evt):
@@ -215,6 +225,7 @@ class SimplePendulum(Pendulum):
         self.string.axis = self.pos - self.pivot
 
     def create_inputs(self, user_inputs):
+        Pendulum.create_inputs(self, user_inputs)
         
         user_inputs.append_to_caption("\n \n <b> Parameters : </b> \n \n Mass : ")
 
@@ -259,22 +270,26 @@ class SimplePendulum(Pendulum):
         self.freq_slider.display = wtext(text=f"{self.freq_slider.value:1.2f} hz")
         self.freq_slider.unit = "hz"
         user_inputs.append_to_caption("\n \n")
-        
-        Pendulum.create_inputs(self)
 
         self.inputs_list = [self.mass_slider, self.length_slider, self.radius_slider, self.angle_slider, self.amp_slider, self.freq_slider]
 
     def hide_inputs(self):
         Pendulum.hide_inputs(self)
+        
+    def erase(self):
+        self.string.visible = False
+        self.bob.visible = False
 
 class RodPendulum(Pendulum):
-    def __init__(self, c, drive, line_color, user_inputs):
+    def __init__(self, c, drive, line_color, user_inputs, graphs):
         Pendulum.__init__(self, c, drive)
         self.length = 1
         self.mass = .1
         self.radius = .1
         self.amp = 0.981
         self.freq = sqrt(9.81 / self.length) / 2 / pi - .1
+        self.type = "Rod Pendulum"
+        self.line_color = line_color
 
         self.pivot = vector(0,0,0)
         self.pos = vector(self.length * sin(self.theta), -self.length * cos(self.theta), 0)
@@ -284,7 +299,7 @@ class RodPendulum(Pendulum):
         
         user_inputs.select()
         self.create_inputs(user_inputs)
-        self.graphs = Graphs(c, line_color)
+        self.graphs = graphs
         c.range = (self.length + self.radius) * 1.5
 
     def change_values(self, evt):
@@ -330,6 +345,8 @@ class RodPendulum(Pendulum):
         self.rod.axis = self.pos - self.pivot
 
     def create_inputs(self, user_inputs):
+        Pendulum.create_inputs(self, user_inputs)
+        
         user_inputs.append_to_caption("\n \n <b> Parameters : </b> \n \n Mass : ")
 
         self.mass_slider = slider(bind = self.change_values, max = 10, min = 0.1, step = 0.1, value = self.mass)
@@ -374,12 +391,15 @@ class RodPendulum(Pendulum):
         self.freq_slider.unit = "hz"
         user_inputs.append_to_caption("\n \n")
         
-        Pendulum.create_inputs(self)
+        scene.append_to_caption("\n\n")
 
         self.inputs_list = [self.mass_slider, self.length_slider, self.radius_slider, self.angle_slider, self.amp_slider, self.freq_slider]
 
     def hide_inputs(self):
         Pendulum.hide_inputs(self)
+        
+    def erase(self):
+        self.rod.visible = False
 
 def play_button(evt) :
     global play
@@ -399,16 +419,84 @@ def reset_button(evt) :
 def toggle_canvas(evt):
     if (evt.c2.active):
         evt.text = "Enable Pendulum 2"
-        print("activated --> disactivated")
+        c2.background = color.gray(0.5)
     else:
         evt.text = "Disable Pendulum 2"
-        print("disactivated --> activated")
+        c2.background = color.white
     evt.c2.active = not evt.c2.active
+    
+def simple_pendulum(c, drive, line_color, user_inputs, graphs):
+    return SimplePendulum(c, drive, line_color, user_inputs, graphs)
+    
+def rod_pendulum(c, drive, line_color, user_inputs, graphs):
+    return RodPendulum(c, drive, line_color, user_inputs, graphs)
+    
+def change_type(evt):
+    global p1, p2, t
+    pendulum_array = [p1, p2]
+#    print(evt.selected)
+#    print(evt.pendulum)
+        
+    p1.hide_inputs()
+    p2.hide_inputs() 
+    p1_graphs = p1.graphs
+    p2_graphs = p2.graphs
+    user_inputs.caption = ""
+    if (evt.pendulum == 0):
+        init_buttons(user_inputs, evt.selected, p2.type)
+    else:
+        init_buttons(user_inputs, p1.type, evt.selected)
+    p1.erase()
+    p2.erase()
+    
+    # this section is a bit inefficient but i didnt want to mess w/ function-valued dicts since i was getting an issue w/ them earlier
+    type_array = [0, 0]
+    
+    if evt.selected == "Simple Pendulum":
+        type_array[evt.pendulum] = simple_pendulum
+    elif evt.selected == "Rod Pendulum":
+        type_array[evt.pendulum] = rod_pendulum
+        
+    if pendulum_array[evt.pendulum - 1].type == "Simple Pendulum":
+        type_array[evt.pendulum - 1] = simple_pendulum
+    elif pendulum_array[evt.pendulum - 1].type == "Rod Pendulum":
+        type_array[evt.pendulum - 1] = rod_pendulum
+#    print(type_array)
+
+
+    # glowscript was treating functions referenced by type_array[i] as async functions
+    if (type_array[0] == simple_pendulum):
+        pendulum_array[0] = simple_pendulum(c1, drive, p1.line_color, user_inputs, p1_graphs)
+    else:
+        pendulum_array[0] = rod_pendulum(c1, drive, p1.line_color, user_inputs, p1_graphs)
+    if (type_array[1] == simple_pendulum):
+        pendulum_array[1] = simple_pendulum(c2, drive, p2.line_color, user_inputs, p2_graphs)
+    else:
+        pendulum_array[1] = rod_pendulum(c2, drive, p2.line_color, user_inputs, p2_graphs)
+        
+    p1 = pendulum_array[0]
+    p2 = pendulum_array[1]
+    t = 0
+    p1.graphs.clear_graphs()
+    p2.graphs.clear_graphs()
+#    print(pendulum_array)
+#    print(p1, p2)
 
 def drive(time, amp, freq):
     return amp * cos(freq * 2 * pi * time)
     
-
+def init_buttons(user_inputs, p1_type, p2_type):
+    user_inputs.select()
+    toggle_simulation = button(bind = play_button, text = "Play/Pause")
+    reset = button(bind = reset_button, text = "Reset")
+    disable_c2 = button(bind = toggle_canvas, text = "Disable Pendulum 2")
+    disable_c2.c2 = c2
+    user_inputs.append_to_caption("\n\n Pendulum 1 Type: ")
+    dropdown1 = menu(bind = change_type, choices=["Simple Pendulum", "Rod Pendulum"], selected = p1_type, pendulum = 0)
+    user_inputs.append_to_caption("     Pendulum 2 Type: ")
+    dropdown2 = menu(bind = change_type, choices=["Simple Pendulum", "Rod Pendulum"], selected = p2_type, pendulum = 1)
+    user_inputs.append_to_caption("\n\n")
+    
 c1 = canvas(width=500, height=500, background = color.white, align="left")
 c1.userzoom = False
 c1.userpan = False
@@ -419,29 +507,32 @@ c2.active = True
 
 scene.append_to_caption("\n\n")
 
-user_inputs = canvas(width = 1000, height = 1, background = color.white)
+user_inputs = canvas(width = 1, height = 1, background = color.white)
+init_buttons(user_inputs, "Simple Pendulum", "Rod Pendulum")
 
-toggle_simulation = button(bind = play_button, text = "Play/Pause")
-reset = button(bind = reset_button, text = "Reset")
-disable_c2 = button(bind = toggle_canvas, text = "Disable Pendulum 2")
-disable_c2.c2 = c2
-
-#c1.append_to_caption("\n\n")
 c2.append_to_caption("\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n")
-p1 = SimplePendulum(c1, drive, "red", user_inputs)
-p2 = RodPendulum(c2, drive, "blue", user_inputs)
 
-scene.append_to_caption("\n\n")
+g1 = Graphs(c1, "red")
+g2 = Graphs(c2, "blue")
+
+p1 = SimplePendulum(c1, drive, "red", user_inputs, g1)
+p2 = RodPendulum(c2, drive, "blue", user_inputs, g2)
+
 #g_canvas = canvas(width=1000, height=1000, background = color.white)
-
-#p1.graphs = Graphs(g_canvas, "red")
-#p2.graphs = Graphs(g_canvas, "blue")
 
 while (True):
     rate(100)
     if (play):
         p1.update()
         p1.render()
+        # add check that c2 is active
+        if (c2.active):
+            p2.update()
+            p2.render()
+        t += dt
+
+
+
         # add check that c2 is active
         if (c2.active):
             p2.update()

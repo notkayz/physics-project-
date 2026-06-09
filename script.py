@@ -17,19 +17,24 @@ class Graphs:
         c.select()
         self.omega_graph = graph(width=350, height=250, xtitle=("Time (s)"), ytitle=("Angular Velocity (rad/s)"), align="left", xmin=0, xmax=10)
         self.omega_line = gcurve(color=line_color)
+        self.omega_graph.foreground = line_color
         
         self.alpha_graph = graph(width=350, height=250, xtitle=("Time (s)"), ytitle=("Angular Acceleration (rad/s^2)"), align="left", xmin=0, xmax=10)
         self.alpha_line = gcurve(color=line_color)
+        self.alpha_graph.foreground = line_color
 
         self.drive_graph = graph(width=350, height=250, xtitle=("Time (s)"), ytitle=("Driving Force (N)"), align="left", xmin=0, xmax=10)
         self.drive_line = gcurve(color=line_color)
+        self.drive_graph.foreground = line_color
 
         self.energy_graph = graph(width=350, height=250, xtitle=("Time (s)"), ytitle=(f"KE (green) and U ({color_name}) (J)"), align="left", xmin=0, xmax=10)
         self.ke_line = gcurve(color=color.green)
         self.u_line = gcurve(color=line_color)
+        self.energy_graph.foreground = line_color
 
         self.phase_graph = graph(width=350, height=250, xtitle=("Angular Position (rad)"), ytitle=("Angular Velocity (rad/s)"), align="left", xmin=-pi, xmax=pi)
         self.phase_line = gcurve(color=line_color)
+        self.phase_graph.foreground = line_color
 
         self.graphs = [self.omega_graph, self.alpha_graph, self.drive_graph, self.energy_graph, self.phase_graph]
         self.curves = [self.omega_line, self.alpha_line, self.drive_line, self.ke_line, self.u_line, self.phase_line]
@@ -113,7 +118,8 @@ class Pendulum:
         
         self.theta += dt * (k1_theta + 2 * k2_theta + 2 * k3_theta + k4_theta) / 6 
         self.omega += dt * (k1_omega + 2 * k2_omega + 2 * k3_omega + k4_omega) / 6
-        
+        self.alpha = self.get_alpha(t, self.theta, self.omega)
+                
         if (self.theta > pi or self.theta < -pi): 
             self.theta = self.theta_shift()
             self.graphs.shifted = True
@@ -129,7 +135,7 @@ class Pendulum:
     def create_inputs(self, user_inputs):
         user_inputs.append_to_caption("\n Approximation Method: ")
         
-        self.method_dropdown = menu(bind=self.change_method, choices=["Euler-Kromer", "Runge-Kutta Order 2", "Runge-Kutta Order 4"], selected=self.current_method_name)
+        self.method_dropdown = menu(bind=self.change_method, choices=["Euler-Kromer", "Runge-Kutta Order 4"], selected=self.current_method_name)
         self.method_dropdown.pendulum = self # to get around glowscript class issues
         
 
@@ -204,7 +210,7 @@ class SimplePendulum(Pendulum):
         self.current_method()
         
         self.ke = .5 * self.mass * (self.length * self.omega) ** 2
-        self.u = self.mass * 9.81 * (self.length * (1 - cos(abs(self.theta))))
+        self.u = self.mass * 9.81 * (self.length * (1 - cos(self.theta)))
         Pendulum.update(self)
     
     def get_alpha(self, time, theta, omega):
@@ -271,7 +277,7 @@ class SimplePendulum(Pendulum):
         self.freq_slider.unit = "hz"
         user_inputs.append_to_caption("\n \n")
 
-        self.inputs_list = [self.mass_slider, self.length_slider, self.radius_slider, self.angle_slider, self.amp_slider, self.freq_slider]
+        self.inputs_list = [self.mass_slider, self.length_slider, self.radius_slider, self.angle_slider, self.density_slider, self.amp_slider, self.freq_slider]
 
     def hide_inputs(self):
         Pendulum.hide_inputs(self)
@@ -333,7 +339,7 @@ class RodPendulum(Pendulum):
 
     def update_graphs(self):
         self.ke = .5 * 1 / 3 * self.mass * (self.length * self.omega) ** 2
-        self.u = self.mass * 9.81 * self.length / 2 * (1 - cos(abs(self.theta))) # center of mass
+        self.u = self.mass * 9.81 * self.length / 2 * (1 - cos(self.theta)) # center of mass
         self.graphs.update_graphs()
 
     def reset(self):
@@ -393,7 +399,7 @@ class RodPendulum(Pendulum):
         
         scene.append_to_caption("\n\n")
 
-        self.inputs_list = [self.mass_slider, self.length_slider, self.radius_slider, self.angle_slider, self.amp_slider, self.freq_slider]
+        self.inputs_list = [self.mass_slider, self.length_slider, self.radius_slider, self.angle_slider, self.density_slider, self.amp_slider, self.freq_slider]
 
     def hide_inputs(self):
         Pendulum.hide_inputs(self)
@@ -415,6 +421,10 @@ def reset_button(evt) :
     p2.graphs.clear_graphs()    
     p2.reset()
     p2.render()
+    p1.phase_lines = []
+    p2.phase_lines = []
+    p1.shifted = False
+    p2.shifted = False
     
 def toggle_canvas(evt):
     if (evt.c2.active):
@@ -432,7 +442,7 @@ def rod_pendulum(c, drive, line_color, user_inputs, graphs):
     return RodPendulum(c, drive, line_color, user_inputs, graphs)
     
 def change_type(evt):
-    global p1, p2, t
+    global p1, p2, t, play
     pendulum_array = [p1, p2]
 #    print(evt.selected)
 #    print(evt.pendulum)
@@ -479,6 +489,7 @@ def change_type(evt):
     t = 0
     p1.graphs.clear_graphs()
     p2.graphs.clear_graphs()
+    play = False
 #    print(pendulum_array)
 #    print(p1, p2)
 
@@ -525,14 +536,6 @@ while (True):
     if (play):
         p1.update()
         p1.render()
-        # add check that c2 is active
-        if (c2.active):
-            p2.update()
-            p2.render()
-        t += dt
-
-
-
         # add check that c2 is active
         if (c2.active):
             p2.update()

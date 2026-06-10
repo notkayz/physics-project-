@@ -7,13 +7,13 @@ scene.visible = False
 t = 0
 dt = 0.01
 play = False
+active_tab = 0
 
 class Graphs:
     def __init__(self, c, color_name):
         self.t_frame = 10
         
         line_color = getattr(color, color_name)
-#        canvas.append_to_caption("\n \n")
         c.select()
         self.omega_graph = graph(width=350, height=250, xtitle=("Time (s)"), ytitle=("Angular Velocity (rad/s)"), align="left", xmin=0, xmax=10)
         self.omega_line = gcurve(color=line_color)
@@ -133,7 +133,7 @@ class Pendulum:
         self.pos = vector(self.length * sin(self.theta), -self.length * cos(self.theta), 0)
 
     def create_inputs(self, user_inputs):
-        user_inputs.append_to_caption("\n Approximation Method: ")
+        user_inputs.append_to_caption("\nApproximation Method: ")
         
         self.method_dropdown = menu(bind=self.change_method, choices=["Euler-Kromer", "Runge-Kutta Order 4"], selected=self.current_method_name)
         self.method_dropdown.pendulum = self # to get around glowscript class issues
@@ -144,7 +144,6 @@ class Pendulum:
             input.delete()
             
     def change_method(self, evt):
-#        print(evt.pendulum.current_method_name)
         if evt.index == 0: 
             evt.pendulum.current_method = evt.pendulum.euler_kromer
             evt.pendulum.current_method_name = "Euler-Kromer"
@@ -233,44 +232,44 @@ class SimplePendulum(Pendulum):
     def create_inputs(self, user_inputs):
         Pendulum.create_inputs(self, user_inputs)
         
-        user_inputs.append_to_caption("\n \n <b> Parameters : </b> \n \n Mass : ")
+        user_inputs.append_to_caption("\n\nMass: ")
 
         self.mass_slider = slider(bind = self.change_values, max = 10, min = 0.1, step = 0.1, value = self.mass)
         self.mass_slider.parameter = "mass"
         self.mass_slider.display = wtext(text=f"{self.mass_slider.value:1.2f} kg")
         self.mass_slider.unit = "kg"
 
-        user_inputs.append_to_caption("\n \n String Length: ")
+        user_inputs.append_to_caption("\n\nString Length: ")
         self.length_slider = slider(bind = self.change_values, max = 10, min = .1, step = .1, value = self.length)
         self.length_slider.parameter = "length"
         self.length_slider.display = wtext(text=f"{self.length_slider.value:1.2f} m")
         self.length_slider.unit = "m"
 
-        user_inputs.append_to_caption("\n \n Ball Radius: ")
+        user_inputs.append_to_caption("\n\nBall Radius: ")
         self.radius_slider = slider(bind = self.change_values, max = 1, min = 0.1, step = 0.1, value = self.radius)
         self.radius_slider.parameter = "radius"
         self.radius_slider.display = wtext(text=f"{self.radius_slider.value:1.2f} m")
         self.radius_slider.unit = "m"
 
-        user_inputs.append_to_caption("\n \n Starting Angle: ")
+        user_inputs.append_to_caption("\n\nStarting Angle: ")
         self.angle_slider = slider(bind = self.change_values, max = 180, min = -180, step = 1, value = self.theta * 180 / pi)        
         self.angle_slider.parameter = "theta"
         self.angle_slider.display = wtext(text=f"{self.angle_slider.value:1.2f} deg")
         self.angle_slider.unit = "deg"
         
-        user_inputs.append_to_caption("\n \n Air Density: ")
+        user_inputs.append_to_caption("\n\nAir Density: ")
         self.density_slider = slider(bind = self.change_values, max = 5, min = 0, step = .001, value = self.air_density)        
         self.density_slider.parameter = "air_density"
         self.density_slider.display = wtext(text=f"{self.density_slider.value:1.3f} kg/m^3")
         self.density_slider.unit = "kg/m^3"
 
-        user_inputs.append_to_caption("\n \n Drive Amplitude: ")
+        user_inputs.append_to_caption("\n\nDrive Amplitude: ")
         self.amp_slider = slider(bind = self.change_values, max = 10, min = 0, step = 0.1, value = self.amp)
         self.amp_slider.parameter = "amp"
         self.amp_slider.display = wtext(text=f"{self.amp_slider.value:1.2f} N")
         self.amp_slider.unit = "N"
 
-        user_inputs.append_to_caption("\n \n Drive Frequency: ")
+        user_inputs.append_to_caption("\n\nDrive Frequency: ")
         self.freq_slider = slider(bind = self.change_values, max = 1, min = 0, step = .01, value = self.freq)        
         self.freq_slider.parameter = "freq"
         self.freq_slider.display = wtext(text=f"{self.freq_slider.value:1.2f} hz")
@@ -353,44 +352,44 @@ class RodPendulum(Pendulum):
     def create_inputs(self, user_inputs):
         Pendulum.create_inputs(self, user_inputs)
         
-        user_inputs.append_to_caption("\n \n <b> Parameters : </b> \n \n Mass : ")
+        user_inputs.append_to_caption("\n\nMass: ")
 
         self.mass_slider = slider(bind = self.change_values, max = 10, min = 0.1, step = 0.1, value = self.mass)
         self.mass_slider.parameter = "mass"
         self.mass_slider.display = wtext(text=f"{self.mass_slider.value:1.2f} kg")
         self.mass_slider.unit = "kg"
 
-        user_inputs.append_to_caption("\n \n Rod Length: ")
+        user_inputs.append_to_caption("\n\nRod Length: ")
         self.length_slider = slider(bind = self.change_values, max = 10, min = .1, step = .1, value = self.length)
         self.length_slider.parameter = "length"
         self.length_slider.display = wtext(text=f"{self.length_slider.value:1.2f} m")
         self.length_slider.unit = "m"
 
-        user_inputs.append_to_caption("\n \n Rod Radius: ")
+        user_inputs.append_to_caption("\n\nRod Radius: ")
         self.radius_slider = slider(bind = self.change_values, max = 1, min = 0.01, step = 0.01, value = self.radius)
         self.radius_slider.parameter = "radius"
         self.radius_slider.display = wtext(text=f"{self.radius_slider.value:1.2f} m")
         self.radius_slider.unit = "m"
 
-        user_inputs.append_to_caption("\n \n Starting Angle: ")
+        user_inputs.append_to_caption("\n\nStarting Angle: ")
         self.angle_slider = slider(bind = self.change_values, max = 180, min = -180, step = 1, value = self.theta * 180 / pi)        
         self.angle_slider.parameter = "theta"
         self.angle_slider.display = wtext(text=f"{self.angle_slider.value:1.2f} deg")
         self.angle_slider.unit = "deg"
         
-        user_inputs.append_to_caption("\n \n Air Density: ")
+        user_inputs.append_to_caption("\n\nAir Density: ")
         self.density_slider = slider(bind = self.change_values, max = 5, min = 0, step = .001, value = self.air_density)        
         self.density_slider.parameter = "air_density"
         self.density_slider.display = wtext(text=f"{self.density_slider.value:1.3f} kg/m^3")
         self.density_slider.unit = "kg/m^3"
 
-        user_inputs.append_to_caption("\n \n Drive Amplitude: ")
+        user_inputs.append_to_caption("\n\nDrive Amplitude: ")
         self.amp_slider = slider(bind = self.change_values, max = 10, min = 0, step = 0.1, value = self.amp)
         self.amp_slider.parameter = "amp"
         self.amp_slider.display = wtext(text=f"{self.amp_slider.value:1.2f} N")
         self.amp_slider.unit = "N"
 
-        user_inputs.append_to_caption("\n \n Drive Frequency: ")
+        user_inputs.append_to_caption("\n\nDrive Frequency: ")
         self.freq_slider = slider(bind = self.change_values, max = 1, min = 0, step = .01, value = self.freq)        
         self.freq_slider.parameter = "freq"
         self.freq_slider.display = wtext(text=f"{self.freq_slider.value:1.2f} hz")
@@ -444,18 +443,16 @@ def rod_pendulum(c, drive, line_color, user_inputs, graphs):
 def change_type(evt):
     global p1, p2, t, play
     pendulum_array = [p1, p2]
-#    print(evt.selected)
-#    print(evt.pendulum)
         
     p1.hide_inputs()
     p2.hide_inputs() 
     p1_graphs = p1.graphs
     p2_graphs = p2.graphs
-    user_inputs.caption = ""
-    if (evt.pendulum == 0):
-        init_buttons(user_inputs, evt.selected, p2.type)
-    else:
-        init_buttons(user_inputs, p1.type, evt.selected)
+#    user_inputs.caption = ""
+#    if (evt.pendulum == 0):
+#        init_buttons(user_inputs, evt.selected, p2.type)
+#    else:
+#        init_buttons(user_inputs, p1.type, evt.selected)
     p1.erase()
     p2.erase()
     
@@ -471,8 +468,6 @@ def change_type(evt):
         type_array[evt.pendulum - 1] = simple_pendulum
     elif pendulum_array[evt.pendulum - 1].type == "Rod Pendulum":
         type_array[evt.pendulum - 1] = rod_pendulum
-#    print(type_array)
-
 
     # glowscript was treating functions referenced by type_array[i] as async functions
     if (type_array[0] == simple_pendulum):
@@ -490,11 +485,7 @@ def change_type(evt):
     p1.graphs.clear_graphs()
     p2.graphs.clear_graphs()
     play = False
-#    print(pendulum_array)
-#    print(p1, p2)
-
-def drive(time, amp, freq):
-    return amp * cos(freq * 2 * pi * time)
+    render_tab(active_tab)
     
 def init_buttons(user_inputs, p1_type, p2_type):
     user_inputs.select()
@@ -502,11 +493,36 @@ def init_buttons(user_inputs, p1_type, p2_type):
     reset = button(bind = reset_button, text = "Reset")
     disable_c2 = button(bind = toggle_canvas, text = "Disable Pendulum 2")
     disable_c2.c2 = c2
-    user_inputs.append_to_caption("\n\n Pendulum 1 Type: ")
-    dropdown1 = menu(bind = change_type, choices=["Simple Pendulum", "Rod Pendulum"], selected = p1_type, pendulum = 0)
-    user_inputs.append_to_caption("     Pendulum 2 Type: ")
-    dropdown2 = menu(bind = change_type, choices=["Simple Pendulum", "Rod Pendulum"], selected = p2_type, pendulum = 1)
     user_inputs.append_to_caption("\n\n")
+    tab0 = button(bind = change_tab, text="Instructions", tab = 0)
+    tab1 = button(bind = change_tab, text="Edit Pendulum 1", tab = 1)
+    tab2 = button(bind = change_tab, text="Edit Pendulum 2", tab = 2)
+    
+def change_tab(evt):
+    global active_tab
+    active_tab = evt.tab
+    render_tab(active_tab)
+    
+def render_tab(tab):
+    user_inputs.caption = ""
+    init_buttons(user_inputs, p1.type, p2.type)
+    if (tab == 0):
+        user_inputs.append_to_caption("\n\n<b style='font-size: 20px;'>Instructions</b>\n\nPlaceholder")
+    if (tab == 1):
+        user_inputs.append_to_caption("\n\n<b style='font-size: 20px;'>Pendulum 1</b>")
+        user_inputs.append_to_caption("\n\nPendulum Type: ")
+        dropdown1 = menu(bind = change_type, choices=["Simple Pendulum", "Rod Pendulum"], selected = p1.type, pendulum = 0)
+        user_inputs.append_to_caption("\n")
+        p1.create_inputs(user_inputs)
+    if (tab == 2):
+        user_inputs.append_to_caption("\n\n<b style='font-size: 20px;'>Pendulum 2</b>")
+        user_inputs.append_to_caption("\n\nPendulum Type: ")
+        dropdown2 = menu(bind = change_type, choices=["Simple Pendulum", "Rod Pendulum"], selected = p2.type, pendulum = 1)
+        user_inputs.append_to_caption("\n")
+        p2.create_inputs(user_inputs)
+    
+def drive(time, amp, freq):
+    return amp * cos(freq * 2 * pi * time)
     
 c1 = canvas(width=500, height=500, background = color.white, align="left")
 c1.userzoom = False
@@ -529,6 +545,7 @@ g2 = Graphs(c2, "blue")
 p1 = SimplePendulum(c1, drive, "red", user_inputs, g1)
 p2 = RodPendulum(c2, drive, "blue", user_inputs, g2)
 
+render_tab(0)
 #g_canvas = canvas(width=1000, height=1000, background = color.white)
 
 while (True):
@@ -541,5 +558,3 @@ while (True):
             p2.update()
             p2.render()
         t += dt
-
-

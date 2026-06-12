@@ -447,6 +447,19 @@ def toggle_canvas(evt):
         evt.text = "Disable Pendulum 2"
         c2.background = color.white
     evt.c2.active = not evt.c2.active
+    global t, theta, omega, alpha, play 
+    t = 0
+    play = False
+    p1.graphs.clear_graphs()
+    p1.reset()
+    p1.render()
+    p2.graphs.clear_graphs()    
+    p2.reset()
+    p2.render()
+    p1.phase_lines = []
+    p2.phase_lines = []
+    p1.shifted = False
+    p2.shifted = False
     
 def simple_pendulum(c, drive, line_color, user_inputs, graphs):
     return SimplePendulum(c, drive, line_color, user_inputs, graphs)
@@ -525,11 +538,47 @@ def render_tab(tab):
         user_inputs.append_to_caption("\n\n")
     if (tab == 0):
         info_text = wtext(text="""
-            \n\n<div style='width:100px;'><b style='font-size: 20px;'>Instructions **WIP**</b>
-            <p>To alter the properties of the pendula, use the tabs (the second row of buttons) to select the pendulum you’d like to edit. To change the pendulum type, click on the dropdown and select the desired pendulum. Note that this will reset the properties of both pendulums, so you should make sure that the desired types are selected before altering other settings. You can also choose the approximation method used for each pendulum: either Euler-Kromer or Runge-Kutta 4 (the latter providing a more accurate approximation). Physical properties of each pendulum can be altered using the sliders: mass, length, radius, and starting angle. There are also sliders for the air density (which affects the drag force), and the amplitude/frequency of the drive function, which is of the form Acos(f*2pi*t). The natural frequency of each pendulum (being the frequency with only the force of gravity) is also displayed, and updates as the length is changed. Note that the driving force is applied at the center of mass of the pendulum: for the simple pendulum, this is at the center of the bob; for the rod pendulum, it lies on the rod’s axis, halfway between the two ends. To reset the properties of the pendula, simply change the type of one of the pendula. Click the “close tabs” button to close all of the tabs. If you would like to read the instructions again, click the “instructions” tab.</p>
-            <p>The first row of buttons are the simulation controls. The first button pauses/unpauses, the second button resets the simulation (preserving all settings), and the third button enables/disables the second pendulum, which is indicated by the background color of the canvas being white or gray, respectively. </p>
-            <p>When the simulation plays, graphs are rendered for each pendulum. The red set of graphs corresponds to the first pendulum (which is also colored red), and the blue set of graphs corresponds to the second, blue pendulum. There are five different graphs for each one: angular velocity against time, angular acceleration against time, driving force against time, kinetic/potential energy against time, and angular velocity against angular position. The last graph, known as the phase graph, is useful for highlighting the chaotic behavior of the system. If the settings are correct, you will see an initial period of chaotic motion, followed by stable, almost periodic motion around an attractor (manifested in the phase graph by the curve looping around the same point many times).</p>
-            <p>For the best results, set the frequency of the driving force close to the pendulum’s natural frequency, and ensure that the amplitude of the force is greater than (but still in the ballpark of) the weight of the pendulum (which, of course, is approximately 10 times the mass).</p></div>
+            \n<b style='font-size: 20px;'>Instructions</b>
+            
+            - To alter the properties of the pendula, use the tabs (the second row of buttons) to select the pendulum you’d like to edit.
+            
+            - To change the pendulum type, click on the dropdown and select the desired pendulum. Note that this will reset the properties 
+              of both pendulums, so you should make sure that the desired types are selected before altering other settings. 
+              
+            - You can also choose the approximation method used for each pendulum: either Euler-Kromer or Runge-Kutta 4 
+              (the latter providing a more accurate approximation). 
+              
+            - Physical properties of each pendulum can be altered using the sliders: mass, length, radius, and starting angle. There are 
+              also sliders for the air density (which affects the drag force), and the amplitude/frequency of the drive function, which is 
+              of the form Acos(f*2pi*t). 
+              
+            - The natural frequency of each pendulum (being the frequency with only the force of gravity) is also displayed, and updates as 
+              the length is changed. 
+              
+            - Note that the driving force is applied at the center of mass of the pendulum: for the simple pendulum, this is at the center 
+              of the bob; for the rod pendulum, it lies on the rod’s axis, halfway between the two ends. 
+              
+            - To reset the properties of the pendula, simply change the type of one of the pendula. 
+            
+            - Click the “close tabs” button to close all of the tabs. If you would like to read the instructions again, click the “instructions” tab.
+            
+            - The first row of buttons are the simulation controls. The first button pauses/unpauses, the second button resets the simulation 
+              (preserving all settings), and the third button enables/disables the second pendulum, which is indicated by the background color 
+              of the canvas being white or gray, respectively. 
+              
+            - When the simulation plays, graphs are rendered for each pendulum. The red set of graphs corresponds to the first pendulum 
+              (which is also colored red), and the blue set of graphs corresponds to the second, blue pendulum. 
+              
+            - There are five different graphs for each one: angular velocity against time, angular acceleration against time, driving 
+              force against time, kinetic/potential energy against time, and angular velocity against angular position. The last graph, 
+              known as the phase graph, is useful for highlighting the chaotic behavior of the system. 
+              
+            - If the settings are correct, you will see an initial period of chaotic motion, followed by stable, almost periodic motion 
+              around an attractor (manifested in the phase graph by the curve looping around the same point many times).
+              
+            - For the best results, set the frequency of the driving force close to the pendulum’s natural frequency, and ensure that the 
+              amplitude of the force is greater than (but still in the ballpark of) the weight of the pendulum (which, of course, is 
+              approximately 10 times the mass).
         """)
     if (tab == 1):
         user_inputs.append_to_caption("\n\n<b style='font-size: 20px;'>Pendulum 1</b>")
@@ -581,5 +630,4 @@ while (True):
             p2.update()
             p2.render()
         t += dt
-
 

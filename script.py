@@ -1,4 +1,4 @@
-from vpython import *
+from vpythong import *
 
 scene.append_to_caption("\n\n")
 
@@ -154,9 +154,6 @@ class Pendulum:
             evt.pendulum.current_method = evt.pendulum.euler_kromer
             evt.pendulum.current_method_name = "Euler-Kromer"
         elif evt.index == 1: 
-            evt.pendulum.current_method = evt.pendulum.rk2
-            evt.pendulum.current_method_name = "Runge-Kutta Order 2"
-        elif evt.index == 2: 
             evt.pendulum.current_method = evt.pendulum.rk4
             evt.pendulum.current_method_name = "Runge-Kutta Order 4"
 #        print(evt.pendulum.current_method_name)
@@ -630,4 +627,5 @@ while (True):
             p2.update()
             p2.render()
         t += dt
+
 

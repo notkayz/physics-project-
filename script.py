@@ -86,7 +86,7 @@ class Pendulum:
         self.alpha = 0
         self.drive = drive
         self.pivot_ball = sphere(canvas = canvas, pos = vec(0, 0, 0), radius = .02, color = color.green)
-        self.air_density = 1.225
+        self.air_density = 1.23
         
         self.current_method = self.euler_kromer
         self.current_method_name = "Euler-Kromer"
@@ -125,9 +125,15 @@ class Pendulum:
             self.graphs.shifted = True
 
     def reset(self):
-        self.theta = radians(30) 
+        self.theta = pi/6
         self.omega = 0
         self.alpha = 0
+        
+        self.update_angle_slider()
+        
+    def update_angle_slider(self):
+        self.angle_slider.display.text = f"{self.theta / pi * 180:1.2f} deg"
+        self.angle_slider.value = self.theta / pi * 180
 
     def render(self):
         self.pos = vector(self.length * sin(self.theta), -self.length * cos(self.theta), 0)
@@ -171,8 +177,8 @@ class SimplePendulum(Pendulum):
         self.length = 1
         self.mass = .1
         self.radius = .1
-        self.amp = 0.981
-        self.freq = sqrt(9.81 / self.length) / 2 / pi - .1
+        self.amp = 1
+        self.freq = .3
         self.type = "Simple Pendulum"
         self.line_color = line_color
 
@@ -197,9 +203,10 @@ class SimplePendulum(Pendulum):
         else:
             setattr(self, evt.parameter, evt.value) #takes parameter as string and sets to value
         evt.display.text = f"{evt.value:1.2f} {evt.unit}"
+        self.nfreq_text.text = f"Natural Frequency: {sqrt(9.81 / self.length) / 2 / pi:1.4f} hz"
         self.bob.radius = self.radius
         self.canvas.range = (self.length + self.radius) * 1.5
-        self.drag_coefficient = .5 * self.air_density * 1.17 * 2 * self.radius * self.length
+        self.drag_coefficient = .5 * self.air_density * .47 * pi * self.bob.radius ** 2
         self.render()
         
     def change_method(self, evt):
@@ -240,31 +247,31 @@ class SimplePendulum(Pendulum):
         self.mass_slider.unit = "kg"
 
         user_inputs.append_to_caption("\n\nString Length: ")
-        self.length_slider = slider(bind = self.change_values, max = 10, min = .1, step = .1, value = self.length)
+        self.length_slider = slider(bind = self.change_values, max = 10, min = 1, step = .1, value = self.length)
         self.length_slider.parameter = "length"
         self.length_slider.display = wtext(text=f"{self.length_slider.value:1.2f} m")
         self.length_slider.unit = "m"
 
         user_inputs.append_to_caption("\n\nBall Radius: ")
-        self.radius_slider = slider(bind = self.change_values, max = 1, min = 0.1, step = 0.1, value = self.radius)
+        self.radius_slider = slider(bind = self.change_values, max = 1, min = 0.1, step = 0.01, value = self.radius)
         self.radius_slider.parameter = "radius"
         self.radius_slider.display = wtext(text=f"{self.radius_slider.value:1.2f} m")
         self.radius_slider.unit = "m"
 
-        user_inputs.append_to_caption("\n\nStarting Angle: ")
+        user_inputs.append_to_caption("\n\nAngle: ")
         self.angle_slider = slider(bind = self.change_values, max = 180, min = -180, step = 1, value = self.theta * 180 / pi)        
         self.angle_slider.parameter = "theta"
         self.angle_slider.display = wtext(text=f"{self.angle_slider.value:1.2f} deg")
         self.angle_slider.unit = "deg"
         
         user_inputs.append_to_caption("\n\nAir Density: ")
-        self.density_slider = slider(bind = self.change_values, max = 5, min = 0, step = .001, value = self.air_density)        
+        self.density_slider = slider(bind = self.change_values, max = 5, min = 0, step = .01, value = self.air_density)        
         self.density_slider.parameter = "air_density"
-        self.density_slider.display = wtext(text=f"{self.density_slider.value:1.3f} kg/m^3")
+        self.density_slider.display = wtext(text=f"{self.density_slider.value:1.2f} kg/m^3")
         self.density_slider.unit = "kg/m^3"
 
         user_inputs.append_to_caption("\n\nDrive Amplitude: ")
-        self.amp_slider = slider(bind = self.change_values, max = 10, min = 0, step = 0.1, value = self.amp)
+        self.amp_slider = slider(bind = self.change_values, max = 100, min = 0, step = 0.1, value = self.amp)
         self.amp_slider.parameter = "amp"
         self.amp_slider.display = wtext(text=f"{self.amp_slider.value:1.2f} N")
         self.amp_slider.unit = "N"
@@ -274,6 +281,8 @@ class SimplePendulum(Pendulum):
         self.freq_slider.parameter = "freq"
         self.freq_slider.display = wtext(text=f"{self.freq_slider.value:1.2f} hz")
         self.freq_slider.unit = "hz"
+        user_inputs.append_to_caption("\n\n")
+        self.nfreq_text = wtext(text=f"Natural Frequency: {sqrt(9.81 / self.length) / 2 / pi:1.4f} hz")
         user_inputs.append_to_caption("\n \n")
 
         self.inputs_list = [self.mass_slider, self.length_slider, self.radius_slider, self.angle_slider, self.density_slider, self.amp_slider, self.freq_slider]
@@ -291,8 +300,8 @@ class RodPendulum(Pendulum):
         self.length = 1
         self.mass = .1
         self.radius = .1
-        self.amp = 0.981
-        self.freq = sqrt(9.81 / self.length) / 2 / pi - .1
+        self.amp = 1
+        self.freq = .3
         self.type = "Rod Pendulum"
         self.line_color = line_color
 
@@ -316,6 +325,7 @@ class RodPendulum(Pendulum):
         else:
             setattr(self, evt.parameter, evt.value) #takes parameter as string and sets to value
         evt.display.text = f"{evt.value:1.2f} {evt.unit}"
+        self.nfreq_text.text = f"Natural Frequency: {sqrt(3 * 9.81 / 2 / self.length) / 2 / pi:1.4f} hz"
         self.rod.radius = self.radius
         self.canvas.range = self.length * 1.5
         self.drag_coefficient = .5 * self.air_density * 1.17 * 2 * self.radius * self.length
@@ -360,31 +370,31 @@ class RodPendulum(Pendulum):
         self.mass_slider.unit = "kg"
 
         user_inputs.append_to_caption("\n\nRod Length: ")
-        self.length_slider = slider(bind = self.change_values, max = 10, min = .1, step = .1, value = self.length)
+        self.length_slider = slider(bind = self.change_values, max = 10, min = 1, step = .01, value = self.length)
         self.length_slider.parameter = "length"
         self.length_slider.display = wtext(text=f"{self.length_slider.value:1.2f} m")
         self.length_slider.unit = "m"
 
         user_inputs.append_to_caption("\n\nRod Radius: ")
-        self.radius_slider = slider(bind = self.change_values, max = 1, min = 0.01, step = 0.01, value = self.radius)
+        self.radius_slider = slider(bind = self.change_values, max = .5, min = 0.01, step = 0.01, value = self.radius)
         self.radius_slider.parameter = "radius"
         self.radius_slider.display = wtext(text=f"{self.radius_slider.value:1.2f} m")
         self.radius_slider.unit = "m"
 
-        user_inputs.append_to_caption("\n\nStarting Angle: ")
+        user_inputs.append_to_caption("\n\nAngle: ")
         self.angle_slider = slider(bind = self.change_values, max = 180, min = -180, step = 1, value = self.theta * 180 / pi)        
         self.angle_slider.parameter = "theta"
         self.angle_slider.display = wtext(text=f"{self.angle_slider.value:1.2f} deg")
         self.angle_slider.unit = "deg"
         
         user_inputs.append_to_caption("\n\nAir Density: ")
-        self.density_slider = slider(bind = self.change_values, max = 5, min = 0, step = .001, value = self.air_density)        
+        self.density_slider = slider(bind = self.change_values, max = 5, min = 0, step = .01, value = self.air_density)        
         self.density_slider.parameter = "air_density"
-        self.density_slider.display = wtext(text=f"{self.density_slider.value:1.3f} kg/m^3")
+        self.density_slider.display = wtext(text=f"{self.density_slider.value:1.2f} kg/m^3")
         self.density_slider.unit = "kg/m^3"
 
         user_inputs.append_to_caption("\n\nDrive Amplitude: ")
-        self.amp_slider = slider(bind = self.change_values, max = 10, min = 0, step = 0.1, value = self.amp)
+        self.amp_slider = slider(bind = self.change_values, max = 100, min = 0, step = 0.1, value = self.amp)
         self.amp_slider.parameter = "amp"
         self.amp_slider.display = wtext(text=f"{self.amp_slider.value:1.2f} N")
         self.amp_slider.unit = "N"
@@ -394,7 +404,9 @@ class RodPendulum(Pendulum):
         self.freq_slider.parameter = "freq"
         self.freq_slider.display = wtext(text=f"{self.freq_slider.value:1.2f} hz")
         self.freq_slider.unit = "hz"
-        user_inputs.append_to_caption("\n \n")
+        user_inputs.append_to_caption("\n\n")
+        self.nfreq_text = wtext(text=f"Natural Frequency: {sqrt(3 * 9.81 / 2 / self.length) / 2 / pi:1.4f} hz")
+#        user_inputs.append_to_caption("\n \n")
         
         scene.append_to_caption("\n\n")
 
@@ -406,11 +418,13 @@ class RodPendulum(Pendulum):
     def erase(self):
         self.rod.visible = False
 
-def play_button(evt) :
+def play_button(evt):
     global play
     play = not play
+    p1.update_angle_slider()
+    p2.update_angle_slider()
 
-def reset_button(evt) :
+def reset_button(evt):
     global t, theta, omega, alpha, play 
     t = 0
     play = False
@@ -494,6 +508,7 @@ def init_buttons(user_inputs, p1_type, p2_type):
     disable_c2 = button(bind = toggle_canvas, text = "Disable Pendulum 2")
     disable_c2.c2 = c2
     user_inputs.append_to_caption("\n\n")
+    tab_clear = button(bind = change_tab, text="Close tabs", tab = -1)
     tab0 = button(bind = change_tab, text="Instructions", tab = 0)
     tab1 = button(bind = change_tab, text="Edit Pendulum 1", tab = 1)
     tab2 = button(bind = change_tab, text="Edit Pendulum 2", tab = 2)
@@ -506,8 +521,16 @@ def change_tab(evt):
 def render_tab(tab):
     user_inputs.caption = ""
     init_buttons(user_inputs, p1.type, p2.type)
+    if (tab == -1):
+        user_inputs.append_to_caption("\n\n")
     if (tab == 0):
-        user_inputs.append_to_caption("\n\n<b style='font-size: 20px;'>Instructions</b>\n\nPlaceholder")
+        info_text = wtext(text="""
+            \n\n<div style='width:100px;'><b style='font-size: 20px;'>Instructions **WIP**</b>
+            <p>To alter the properties of the pendula, use the tabs (the second row of buttons) to select the pendulum you’d like to edit. To change the pendulum type, click on the dropdown and select the desired pendulum. Note that this will reset the properties of both pendulums, so you should make sure that the desired types are selected before altering other settings. You can also choose the approximation method used for each pendulum: either Euler-Kromer or Runge-Kutta 4 (the latter providing a more accurate approximation). Physical properties of each pendulum can be altered using the sliders: mass, length, radius, and starting angle. There are also sliders for the air density (which affects the drag force), and the amplitude/frequency of the drive function, which is of the form Acos(f*2pi*t). The natural frequency of each pendulum (being the frequency with only the force of gravity) is also displayed, and updates as the length is changed. Note that the driving force is applied at the center of mass of the pendulum: for the simple pendulum, this is at the center of the bob; for the rod pendulum, it lies on the rod’s axis, halfway between the two ends. To reset the properties of the pendula, simply change the type of one of the pendula. Click the “close tabs” button to close all of the tabs. If you would like to read the instructions again, click the “instructions” tab.</p>
+            <p>The first row of buttons are the simulation controls. The first button pauses/unpauses, the second button resets the simulation (preserving all settings), and the third button enables/disables the second pendulum, which is indicated by the background color of the canvas being white or gray, respectively. </p>
+            <p>When the simulation plays, graphs are rendered for each pendulum. The red set of graphs corresponds to the first pendulum (which is also colored red), and the blue set of graphs corresponds to the second, blue pendulum. There are five different graphs for each one: angular velocity against time, angular acceleration against time, driving force against time, kinetic/potential energy against time, and angular velocity against angular position. The last graph, known as the phase graph, is useful for highlighting the chaotic behavior of the system. If the settings are correct, you will see an initial period of chaotic motion, followed by stable, almost periodic motion around an attractor (manifested in the phase graph by the curve looping around the same point many times).</p>
+            <p>For the best results, set the frequency of the driving force close to the pendulum’s natural frequency, and ensure that the amplitude of the force is greater than (but still in the ballpark of) the weight of the pendulum (which, of course, is approximately 10 times the mass).</p></div>
+        """)
     if (tab == 1):
         user_inputs.append_to_caption("\n\n<b style='font-size: 20px;'>Pendulum 1</b>")
         user_inputs.append_to_caption("\n\nPendulum Type: ")
@@ -558,3 +581,5 @@ while (True):
             p2.update()
             p2.render()
         t += dt
+
+
